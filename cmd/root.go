@@ -16,17 +16,15 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 
+	"github.com/circonus/grafana-ds-convert/circonus"
+	"github.com/circonus/grafana-ds-convert/grafana"
 	"github.com/circonus/grafana-ds-convert/internal/config"
 	"github.com/circonus/grafana-ds-convert/internal/config/keys"
-	"github.com/grafana-tools/sdk"
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -73,33 +71,18 @@ to Circonus Analytics Query Language (CAQL).`,
 		}
 
 		// create grafana API interface
-		gclient := sdk.NewClient(url, viper.GetString(keys.GrafanaAPIToken), http.DefaultClient)
+		gclient := grafana.New(url, viper.GetString(keys.GrafanaAPIToken))
 
-		// get grafana source folder
-		foundBoards, err := gclient.Search(context.Background(), sdk.SearchType(sdk.SearchTypeFolder), sdk.SearchQuery(viper.GetString(keys.GrafanaSourceFolder)))
+		// create circonus interface
+		circ, err := circonus.New(viper.GetString(keys.CirconusIRONdbHost))
 		if err != nil {
-			log.Fatalf("error fetching grafana dashboard folder: %v", err)
-		}
-		if len(foundBoards) > 1 {
-			log.Fatalf("found more than one folder, please check folder name")
+			log.Fatalf("error connecting to circonus: %v", err)
 		}
 
-		// get dashboards within found folder
-		foundBoards, err = gclient.Search(context.Background(), sdk.SearchType(sdk.SearchTypeDashboard), sdk.SearchFolderID(int(foundBoards[0].ID)))
+		// execute the translation
+		err = gclient.Translate(circ, viper.GetString(keys.GrafanaSourceFolder), viper.GetString(keys.GrafanaDestFolder))
 		if err != nil {
-			log.Fatalf("error fetching dashboards within folder: %v", err)
-		}
-
-		// loop through dashboards in the found folder and create an array of them as well as dashboard properties
-		var boards []sdk.Board
-		var boardProps []sdk.BoardProperties
-		for _, b := range foundBoards {
-			brd, brdProp, err := gclient.GetDashboardByUID(context.Background(), b.UID)
-			if err != nil {
-				log.Fatalf("error fetching dashboard by UID; %v", err)
-			}
-			boards = append(boards, brd)
-			boardProps = append(boardProps, brdProp)
+			log.Fatalf("error translating dashboards: %v", err)
 		}
 
 	},
@@ -171,13 +154,4 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
-}
-
-func pretty(thing interface{}) error {
-	pp, err := json.MarshalIndent(thing, "", "    ")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(pp))
-	return nil
 }

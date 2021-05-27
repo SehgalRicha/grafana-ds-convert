@@ -33,6 +33,9 @@ const (
 	// Grafana source folder
 	GrafanaSourceFolder = "grafana.src_folder"
 
+	// Grafana destination folder
+	GrafanaDestFolder = "grafana.dest_folder"
+
 	//
 	// Circonus
 	//

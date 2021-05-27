@@ -26,17 +26,20 @@ type Circonus struct {
 
 // Grafana defines the Grafana specific configuration options
 type Grafana struct {
-	Host         string `json:"host" toml:"host" yaml:"host"`
-	Port         string `json:"port" toml:"port" yaml:"port"`
-	APIToken     string `json:"api_token" toml:"api_token" yaml:"api_token"`
-	TLS          bool   `json:"secure" toml:"secure" yaml:"secure"`
-	SourceFolder string `json:"src_folder" toml:"src_folder" yaml:"src_folder"`
+	Host              string `json:"host" toml:"host" yaml:"host"`
+	Port              string `json:"port" toml:"port" yaml:"port"`
+	APIToken          string `json:"api_token" toml:"api_token" yaml:"api_token"`
+	TLS               bool   `json:"secure" toml:"secure" yaml:"secure"`
+	SourceFolder      string `json:"src_folder" toml:"src_folder" yaml:"src_folder"`
+	DestinationFolder string `json:"dest_folder" toml:"dest_folder" yaml:"dest_folder"`
 }
 
 // Validate validates that the required config keys are set
 func Validate() error {
 	if viper.GetString(keys.GrafanaAPIToken) == "" {
 		return errors.New("Grafana API Token must be set")
+	} else if viper.GetString(keys.GrafanaHost) == "" || viper.GetString(keys.GrafanaPort) == "" {
+		return errors.New("Grafana host and port must be set")
 	}
 	return nil
 }
