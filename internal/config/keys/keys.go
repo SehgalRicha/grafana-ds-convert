@@ -36,12 +36,18 @@ const (
 	// Grafana destination folder
 	GrafanaDestFolder = "grafana.dest_folder"
 
+	// Grafana Circonus Datasource name
+	GrafanaDatasource = "grafana.datasource"
+
 	//
 	// Circonus
 	//
 
 	// IRONdb host
-	CirconusIRONdbHost = "circonus.irondb_host"
+	CirconusIRONdbHost               = "circonus.irondb_host"
+	CirconusIRONdbPort               = "circonus.irondb_port"
+	CirconusStatsdAggregationsRemove = "circonus.statsd_aggregations.remove"
+	CirconusStatsdAggregationsList   = "circonus.statsd_aggregations.agg_list"
 
 	//
 	// Miscellaneous

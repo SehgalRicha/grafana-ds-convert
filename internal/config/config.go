@@ -21,7 +21,9 @@ type Config struct {
 
 // Circonus defines the Circonus specific configuration options
 type Circonus struct {
-	IRONdbHost string `json:"irondb_host" toml:"irondb_host" yaml:"irondb_host"`
+	IRONdbHost         string `json:"irondb_host" toml:"irondb_host" yaml:"irondb_host"`
+	IRONdbPort         string `json:"irondb_port" toml:"irondb_port" yaml:"irondb_port"`
+	StatsdAggregations `json:"statsd_aggregations" toml:"statsd_aggregations" yaml:"statsd_aggregations"`
 }
 
 // Grafana defines the Grafana specific configuration options
@@ -32,6 +34,12 @@ type Grafana struct {
 	TLS               bool   `json:"secure" toml:"secure" yaml:"secure"`
 	SourceFolder      string `json:"src_folder" toml:"src_folder" yaml:"src_folder"`
 	DestinationFolder string `json:"dest_folder" toml:"dest_folder" yaml:"dest_folder"`
+	Datasource        string `json:"datasource" toml:"datasource" yaml:"datasource"`
+}
+
+type StatsdAggregations struct {
+	Remove          bool     `json:"remove" toml:"remove" yaml:"remove"`
+	AggregationList []string `json:"agg_list" toml:"agg_list" yaml:"agg_list"`
 }
 
 // Validate validates that the required config keys are set

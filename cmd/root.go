@@ -71,16 +71,23 @@ to Circonus Analytics Query Language (CAQL).`,
 		}
 
 		// create grafana API interface
-		gclient := grafana.New(url, viper.GetString(keys.GrafanaAPIToken))
+		gclient := grafana.New(url, viper.GetString(keys.GrafanaAPIToken), viper.GetBool(keys.Debug))
 
 		// create circonus interface
-		circ, err := circonus.New(viper.GetString(keys.CirconusIRONdbHost))
+		circ, err := circonus.New(viper.GetString(keys.CirconusIRONdbHost), viper.GetString(keys.CirconusIRONdbPort), viper.GetBool(keys.Debug))
 		if err != nil {
 			log.Fatalf("error connecting to circonus: %v", err)
 		}
 
 		// execute the translation
-		err = gclient.Translate(circ, viper.GetString(keys.GrafanaSourceFolder), viper.GetString(keys.GrafanaDestFolder))
+		err = gclient.Translate(
+			circ,
+			viper.GetString(keys.GrafanaSourceFolder),
+			viper.GetString(keys.GrafanaDestFolder),
+			viper.GetString(keys.GrafanaDatasource),
+			viper.GetBool(keys.CirconusStatsdAggregationsRemove),
+			viper.GetStringSlice(keys.CirconusStatsdAggregationsList),
+		)
 		if err != nil {
 			log.Fatalf("error translating dashboards: %v", err)
 		}
