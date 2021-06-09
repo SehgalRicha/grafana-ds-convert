@@ -9,9 +9,7 @@ import (
 	"net/http"
 
 	"github.com/circonus/grafana-ds-convert/circonus"
-	"github.com/circonus/grafana-ds-convert/internal/config/keys"
 	"github.com/grafana-tools/sdk"
-	"github.com/spf13/viper"
 )
 
 type Grafana struct {
@@ -26,9 +24,7 @@ func New(url, apikey string, debug bool) Grafana {
 	}
 }
 
-func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, datasource string, removeAggs bool, aggs []string) error {
-
-	fmt.Println(removeAggs)
+func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, datasource string) error {
 
 	// validate src and dest folders
 	if sourceFolder == "" || destFolder == "" {
@@ -36,22 +32,38 @@ func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, data
 	}
 
 	// get grafana source folder
-	foundBoards, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeFolder), sdk.SearchQuery(viper.GetString(keys.GrafanaSourceFolder)))
+	foundSrcFolders, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeFolder), sdk.SearchQuery(sourceFolder))
 	if err != nil {
 		return fmt.Errorf("error fetching grafana dashboard folder: %v", err)
 	}
-	if len(foundBoards) > 1 {
+	if len(foundSrcFolders) > 1 {
 		return fmt.Errorf("found more than one folder, please check folder name")
 	}
 	// debug
 	if g.Debug {
-		log.Println("Found folder:")
-		pp, _ := json.MarshalIndent(foundBoards, "", "    ")
+		log.Println("Found source folder:")
+		pp, _ := json.MarshalIndent(foundSrcFolders, "", "    ")
 		fmt.Println(string(pp))
 	}
 
+	// get grafana destination folder
+	foundDestFolders, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeFolder), sdk.SearchQuery(destFolder))
+	if err != nil {
+		return fmt.Errorf("error fetching grafana dashboard folder: %v", err)
+	}
+	if len(foundDestFolders) > 1 {
+		return fmt.Errorf("found more than one folder, please check folder name")
+	}
+	// debug
+	if g.Debug {
+		log.Println("Found source folder:")
+		pp, _ := json.MarshalIndent(foundDestFolders, "", "    ")
+		fmt.Println(string(pp))
+	}
+	destinationFolder := foundDestFolders[0]
+
 	// get dashboards within found folder
-	foundBoards, err = g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeDashboard), sdk.SearchFolderID(int(foundBoards[0].ID)))
+	foundBoards, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeDashboard), sdk.SearchFolderID(int(foundSrcFolders[0].ID)))
 	if err != nil {
 		return fmt.Errorf("error fetching dashboards within folder: %v", err)
 	}
@@ -74,7 +86,7 @@ func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, data
 		// boardProps = append(boardProps, brdProp)
 	}
 
-	// loop through dashboards and their panels, translating "targetFull"
+	// loop through dashboards and their panels, translating "targetFull" or "target"
 	for _, board := range boards {
 		if len(board.Panels) >= 1 {
 			for _, panel := range board.Panels {
@@ -83,26 +95,48 @@ func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, data
 				if len(*targets) >= 1 {
 					for _, target := range *targets {
 						if target.TargetFull != "" {
-							newTargetStr, err := circ.Translate(target.TargetFull, removeAggs, aggs)
+							newTargetStr, err := circ.Translate(target.TargetFull)
 							if err != nil {
 								log.Println(err)
 								continue
 							}
-							target.TargetFull = newTargetStr
+							target.Query = newTargetStr
 							target.Target = ""
+							target.TargetFull = ""
+							panel.SetTarget(&target)
 							continue
 						} else {
-							newTargetStr, err := circ.Translate(target.Target, removeAggs, aggs)
+							newTargetStr, err := circ.Translate(target.Target)
 							if err != nil {
 								log.Println(err)
 								continue
 							}
-							target.Target = newTargetStr
+							target.Query = newTargetStr
+							target.Target = ""
+							panel.SetTarget(&target)
 						}
 					}
 				}
 			}
 		}
+		if g.Debug {
+			pp, _ := json.MarshalIndent(board, "", "    ")
+			log.Printf("Converted Dashboard:\n%s", string(pp))
+		}
+		newBoard := board
+		newBoard.ID = 0
+		newBoard.UID = ""
+		newBoard.Title += " Circonus"
+		setDashParams := sdk.SetDashboardParams{
+			FolderID:  int(destinationFolder.ID),
+			Overwrite: true,
+		}
+		sm, err := g.Client.SetDashboard(context.Background(), newBoard, setDashParams)
+		if err != nil {
+			return err
+		}
+		pp, _ := json.MarshalIndent(sm, "", "    ")
+		log.Printf("Create Dashboard Response:\n%s", pp)
 	}
 	return nil
 }

@@ -24,13 +24,14 @@ type TranslateRequestBody struct {
 }
 
 type Client struct {
-	URL        *url.URL
-	HTTPClient *http.Client
-	Debug      bool
+	URL                *url.URL
+	HTTPClient         *http.Client
+	Debug              bool
+	StatsdAggregations []string
 }
 
 // New creates a new Circonus Client
-func New(irondbHost, irondbPort string, debug bool) (*Client, error) {
+func New(irondbHost, irondbPort string, debug, removeAggs bool, aggs []string) (*Client, error) {
 
 	// validate that irondb host was provided
 	if irondbHost == "" {
@@ -44,6 +45,15 @@ func New(irondbHost, irondbPort string, debug bool) (*Client, error) {
 		Path:   "/extension/lua/graphite_translate",
 	}
 
+	if removeAggs {
+		// return the circonus client
+		return &Client{
+			HTTPClient:         http.DefaultClient,
+			URL:                u,
+			Debug:              debug,
+			StatsdAggregations: aggs,
+		}, nil
+	}
 	// return the circonus client
 	return &Client{
 		HTTPClient: http.DefaultClient,
@@ -53,7 +63,7 @@ func New(irondbHost, irondbPort string, debug bool) (*Client, error) {
 }
 
 // Translate translates a graphite query into a CAQL query
-func (c *Client) Translate(graphiteQuery string, removeAggs bool, aggs []string) (string, error) {
+func (c *Client) Translate(graphiteQuery string) (string, error) {
 
 	// set up the body for the HTTP request
 	query := strings.Replace(graphiteQuery, " ", "", -1)
@@ -67,9 +77,9 @@ func (c *Client) Translate(graphiteQuery string, removeAggs bool, aggs []string)
 
 	// debug
 	if c.Debug {
-		log.Printf("Translate URL: %s\n", c.URL.String())
-		log.Println("Request Body:")
-		log.Println(string(reqBody))
+		var out bytes.Buffer
+		_ = json.Indent(&out, reqBody, "", "    ")
+		log.Printf("Translate Request Body:\n%s", out.String())
 	}
 
 	// create the HTTP request
@@ -88,27 +98,41 @@ func (c *Client) Translate(graphiteQuery string, removeAggs bool, aggs []string)
 	if err != nil {
 		return "", fmt.Errorf("error reading response body: %v", err)
 	}
-	// debug
-	if c.Debug {
-		log.Println(string(respBody))
-	}
 	var translateResp TranslateResponseBody
 	err = json.Unmarshal(respBody, &translateResp)
-	// debug
-	if c.Debug {
-		log.Println("Translation Response:")
-		pp, _ := json.MarshalIndent(translateResp, "", "    ")
-		fmt.Println(string(pp))
-	}
 	if err != nil {
 		return "", fmt.Errorf("error unmarshaling translation response: %v", err)
 	}
 	if translateResp.CAQL == "" || translateResp.Error != "" {
 		return "", fmt.Errorf("error translating graphite query: %s", translateResp.Error)
 	}
-	if removeAggs {
+	if len(c.StatsdAggregations) > 0 {
 		r := regexp.MustCompile(`graphite:find\('([a-zA-Z\.\*0-9]+)`)
-		fmt.Printf("Found Capture Groups: %#v\n", r.FindStringSubmatch(translateResp.CAQL))
+		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.RemoveAggs)
+	}
+	// debug
+	if c.Debug {
+		log.Println("Translate Response Body:")
+		pp, _ := json.MarshalIndent(translateResp, "", "    ")
+		fmt.Println(string(pp))
 	}
 	return translateResp.CAQL, nil
+}
+
+func (c *Client) RemoveAggs(s string) string {
+	splits := strings.Split(s, ".")
+	if contains(c.StatsdAggregations, splits[len(splits)-1]) {
+		splits = splits[:len(splits)-1]
+		return strings.Join(splits, ".")
+	}
+	return strings.Join(splits, ".")
+}
+
+func contains(s []string, t string) bool {
+	for _, m := range s {
+		if m == t {
+			return true
+		}
+	}
+	return false
 }
