@@ -92,7 +92,7 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating HTTP request: %v", err)
 	}
-	// excecute the HTTP request
+	// execute the HTTP request
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("error fetching translation: %v", err)
