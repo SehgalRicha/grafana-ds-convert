@@ -13,16 +13,21 @@ import (
 	"strings"
 )
 
+//TranslateResponseBody is a struct representing a
+//response from the graphite translator service
 type TranslateResponseBody struct {
 	Input string `json:"input"`
 	CAQL  string `json:"caql"`
 	Error string `json:"error"`
 }
 
+//TranslateRequestBody is a struct representing a
+//request to the graphite translator service
 type TranslateRequestBody struct {
 	Query string `json:"q"`
 }
 
+//Client is a Circonus client
 type Client struct {
 	URL                *url.URL
 	HTTPClient         *http.Client
@@ -119,6 +124,7 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 	return translateResp.CAQL, nil
 }
 
+//RemoveAggs removes the StatsD aggregations from the metric name
 func (c *Client) RemoveAggs(s string) string {
 	splits := strings.Split(s, ".")
 	if contains(c.StatsdAggregations, splits[len(splits)-1]) {

@@ -12,11 +12,13 @@ import (
 	"github.com/grafana-tools/sdk"
 )
 
+//Grafana is a struct that holds the sdk client and other properties
 type Grafana struct {
 	Client *sdk.Client
 	Debug  bool
 }
 
+// New creates a new Grafana
 func New(url, apikey string, debug bool) Grafana {
 	return Grafana{
 		Client: sdk.NewClient(url, apikey, http.DefaultClient),
@@ -24,6 +26,7 @@ func New(url, apikey string, debug bool) Grafana {
 	}
 }
 
+// Translate is the main function which performs dashboard translations
 func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, datasource string) error {
 
 	// validate src and dest folders

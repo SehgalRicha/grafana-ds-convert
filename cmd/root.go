@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	_ "embed"
+	_ "embed" //embedding the version file
 	"fmt"
 	"log"
 	"os"
@@ -99,6 +99,7 @@ to Circonus Analytics Query Language (CAQL).`,
 	},
 }
 
+// Execute kicks off the root cmd
 func Execute() {
 	cobra.CheckErr(rootCmd.Execute())
 }

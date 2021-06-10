@@ -37,6 +37,7 @@ type Grafana struct {
 	Datasource        string `json:"datasource" toml:"datasource" yaml:"datasource"`
 }
 
+// StatsdAggregations defines the statsd_aggregations options
 type StatsdAggregations struct {
 	Remove          bool     `json:"remove" toml:"remove" yaml:"remove"`
 	AggregationList []string `json:"agg_list" toml:"agg_list" yaml:"agg_list"`

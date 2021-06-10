@@ -7,15 +7,28 @@
 package defaults
 
 const (
-
+	//
 	// Circonus Defaults
+	//
+
+	// CirconusIRONdbHost is the hostname for IRONdb
 	CirconusIRONdbHost = ""
 
+	//
 	// Grafana Defaults
-	GrafanaAPIToken = ""
-	GrafanaHost     = "localhost"
-	GrafanaPort     = "3000"
+	//
 
+	//GrafanaAPIToken is the token for accessing Grafana
+	GrafanaAPIToken = ""
+	// GrafanaHost is the host for accessing Grafana
+	GrafanaHost = "localhost"
+	// GrafanaPort is the port for accessing Grafana
+	GrafanaPort = "3000"
+
+	//
 	// Misc Defaults
+	//
+
+	//Debug is a global setting for turning on debugging
 	Debug = false
 )
