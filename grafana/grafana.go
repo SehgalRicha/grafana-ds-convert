@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/circonus/grafana-ds-convert/circonus"
+	"github.com/circonus/grafana-ds-convert/debug"
 	"github.com/grafana-tools/sdk"
 )
 
@@ -44,9 +45,7 @@ func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, data
 	}
 	// debug
 	if g.Debug {
-		log.Println("Found source folder:")
-		pp, _ := json.MarshalIndent(foundSrcFolders, "", "    ")
-		fmt.Println(string(pp))
+		debug.PrintMarshal("Found source folder:", foundSrcFolders)
 	}
 
 	// get grafana destination folder
@@ -59,9 +58,7 @@ func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, data
 	}
 	// debug
 	if g.Debug {
-		log.Println("Found source folder:")
-		pp, _ := json.MarshalIndent(foundDestFolders, "", "    ")
-		fmt.Println(string(pp))
+		debug.PrintMarshal("Found destination folder:", foundDestFolders)
 	}
 	destinationFolder := foundDestFolders[0]
 
@@ -72,9 +69,7 @@ func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, data
 	}
 	// debug
 	if g.Debug {
-		log.Println("Dashboards from Folder:")
-		pp, _ := json.MarshalIndent(foundBoards, "", "    ")
-		fmt.Println(string(pp))
+		debug.PrintMarshal("Dashboards from Folder:", foundBoards)
 	}
 
 	// loop through dashboards in the found folder and create an array of them as well as dashboard properties

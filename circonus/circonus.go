@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/circonus/grafana-ds-convert/debug"
 )
 
 //TranslateResponseBody is a struct representing a
@@ -79,49 +80,60 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	// debug
 	if c.Debug {
-		var out bytes.Buffer
-		_ = json.Indent(&out, reqBody, "", "    ")
-		log.Printf("Translate Request Body:\n%s", out.String())
+		debug.PrintJSONBytes("Translate Request Body:", reqBody)
 	}
 
-	// create the HTTP request
-	req, err := http.NewRequest("POST", c.URL.String(), bytes.NewBuffer(reqBody))
+	// execute the translation HTTP query
+	translateResp, err := c.ExecuteTranslation(reqBody)
 	if err != nil {
-		return "", fmt.Errorf("error creating HTTP request: %v", err)
+		return "", err
+	}
+
+	// check for statsd aggregations to replace, if found, replace them and add
+	// to the CAQL query the correct CAQL function
+	if len(c.StatsdAggregations) > 0 {
+		r := regexp.MustCompile(`graphite:find\('([a-zA-Z\.\*0-9]+)`)
+		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.RemoveAggs)
+	}
+	return translateResp.CAQL, nil
+}
+
+// ExecuteTranslation handles the HTTP request for the translation
+func (c *Client) ExecuteTranslation(b []byte) (*TranslateResponseBody, error) {
+	reqBody := bytes.NewBuffer(b)
+	req, err := http.NewRequest("POST", c.URL.String(), reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("error creating HTTP request: %v", err)
 	}
 	// execute the HTTP request
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("error fetching translation: %v", err)
+		return nil, fmt.Errorf("error fetching translation: %v", err)
 	}
 	defer resp.Body.Close()
 	// read the body from the response into []byte
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("error reading response body: %v", err)
+		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
 	var translateResp TranslateResponseBody
 	err = json.Unmarshal(respBody, &translateResp)
 	if err != nil {
-		return "", fmt.Errorf("error unmarshaling translation response: %v", err)
+		return nil, fmt.Errorf("error unmarshaling translation response: %v", err)
 	}
-	if translateResp.CAQL == "" || translateResp.Error != "" {
-		return "", fmt.Errorf("error translating graphite query: %s", translateResp.Error)
+	if translateResp.CAQL == "" {
+		return nil, fmt.Errorf("error translating graphite query: null CAQL string")
 	}
-	if len(c.StatsdAggregations) > 0 {
-		r := regexp.MustCompile(`graphite:find\('([a-zA-Z\.\*0-9]+)`)
-		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.RemoveAggs)
+	if translateResp.Error != "" {
+		return nil, fmt.Errorf("error translating graphite query: %s", translateResp.Error)
 	}
 	// debug
 	if c.Debug {
-		log.Println("Translate Response Body:")
-		pp, _ := json.MarshalIndent(translateResp, "", "    ")
-		fmt.Println(string(pp))
+		debug.PrintMarshal("Translate Response Body:", translateResp)
 	}
-	return translateResp.CAQL, nil
+	return &translateResp, nil
 }
 
 //RemoveAggs removes the StatsD aggregations from the metric name
