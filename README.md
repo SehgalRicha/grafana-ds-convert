@@ -1,5 +1,7 @@
 # grafana-ds-convert
 
+[![CodeQL](https://github.com/circonus/grafana-ds-convert/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/circonus/grafana-ds-convert/actions/workflows/codeql-analysis.yml)
+
 grafana-ds-convert allows Grafana users to convert assets like dashboards and alerts from different supported query languages to Circonus Analytics Query Language (CAQL).
 
 ## Features
