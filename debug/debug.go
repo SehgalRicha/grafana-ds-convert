@@ -15,7 +15,7 @@ func PrintMarshal(msg string, v interface{}) {
 }
 
 // PrintJSONBytes pretty prints a JSON byte array
-func PrintJSONBytes(msg, v []byte) {
+func PrintJSONBytes(msg string, v []byte) {
 	var out bytes.Buffer
 	json.Indent(&out, v, "", "    ")
 	log.Printf("%s: %s\n", msg, out.String())
