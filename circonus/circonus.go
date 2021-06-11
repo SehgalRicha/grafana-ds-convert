@@ -94,8 +94,8 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 	// check for statsd aggregations to replace, if found, replace them and add
 	// to the CAQL query the correct CAQL function
 	if len(c.StatsdAggregations) > 0 {
-		r := regexp.MustCompile(`graphite:find\('([a-zA-Z\.\*0-9]+)`)
-		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.RemoveAggs)
+		r := regexp.MustCompile(`(graphite:find\('[^']+'\))`)
+		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.HandleStatsdAggregations)
 	}
 	return translateResp.CAQL, nil
 }
@@ -136,14 +136,18 @@ func (c *Client) ExecuteTranslation(b []byte) (*TranslateResponseBody, error) {
 	return &translateResp, nil
 }
 
-//RemoveAggs removes the StatsD aggregations from the metric name
-func (c *Client) RemoveAggs(s string) string {
-	splits := strings.Split(s, ".")
-	if contains(c.StatsdAggregations, splits[len(splits)-1]) {
+// HandleStatsdAggregations will append the correct CAQL
+func (c *Client) HandleStatsdAggregations(s string) string {
+	r := regexp.MustCompile(`graphite:find\('([^']+)'\)`)
+	metricName := r.FindStringSubmatch(s)
+	splits := strings.Split(metricName[1], ".")
+	aggNode := splits[len(splits)-1]
+	if contains(c.StatsdAggregations, aggNode) {
+		appendCAQL := getAppendCAQL(aggNode)
 		splits = splits[:len(splits)-1]
-		return strings.Join(splits, ".")
+		return fmt.Sprintf("graphite:find('%s') %s", strings.Join(splits, "."), appendCAQL)
 	}
-	return strings.Join(splits, ".")
+	return s
 }
 
 func contains(s []string, t string) bool {
@@ -153,4 +157,35 @@ func contains(s []string, t string) bool {
 		}
 	}
 	return false
+}
+
+func getAppendCAQL(statsdAgg string) string {
+	switch statsdAgg {
+	case "sum":
+		return "histogram:sum()"
+	case "count":
+		return "histogram:count()"
+	case "mean":
+		return "histogram:mean()"
+	case "lower":
+		return "histogram:min()"
+	case "upper":
+		return "histogram:max()"
+	case "count_ps":
+		return "histogram:rate(period=1)"
+	case "std":
+		return "histogram:stddev()"
+	}
+	if strings.Contains(statsdAgg, "_") {
+		split := strings.Split(statsdAgg, "_")
+		switch split[0] {
+		case "mean":
+			return fmt.Sprintf("histogram:percentile(%s) | histogram:mean()", split[1])
+		case "sum":
+			return fmt.Sprintf("histogram:percentile(%s) | histogram:sum()", split[1])
+		case "upper":
+			return fmt.Sprintf("histogram:percentile(%s) | histogram:max()", split[1])
+		}
+	}
+	return ""
 }
