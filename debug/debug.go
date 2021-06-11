@@ -17,6 +17,10 @@ func PrintMarshal(msg string, v interface{}) {
 // PrintJSONBytes pretty prints a JSON byte array
 func PrintJSONBytes(msg string, v []byte) {
 	var out bytes.Buffer
-	json.Indent(&out, v, "", "    ")
+	err := json.Indent(&out, v, "", "    ")
+	if err != nil {
+		log.Printf("error indenting JSON []byte: %v", err)
+		return
+	}
 	log.Printf("%s: %s\n", msg, out.String())
 }
