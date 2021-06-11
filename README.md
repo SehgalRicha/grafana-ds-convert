@@ -32,6 +32,8 @@ debug = false
 [circonus]
   irondb_host = "<HOST IP>"
   irondb_port = "<PORT>"
+  # statsd_interval is the interval at which Circonus is receiving StatsD metrics (Default: 10s)
+  statsd_interval = 10
   # statsd_aggregations section defines what to do with StatsD
   # aggregations, and which ones to act on
   [circonus.statsd_aggregations]
