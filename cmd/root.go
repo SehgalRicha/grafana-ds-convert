@@ -65,6 +65,7 @@ to Circonus Analytics Query Language (CAQL).`,
 			viper.GetBool(keys.Debug),
 			viper.GetBool(keys.CirconusStatsdAggregationsRemove),
 			viper.GetStringSlice(keys.CirconusStatsdAggregationsList),
+			viper.GetInt(keys.CirconusStatsdFlushInterval),
 		)
 		if err != nil {
 			log.Fatalf("error connecting to circonus: %v", err)

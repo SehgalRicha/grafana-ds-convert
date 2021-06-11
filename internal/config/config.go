@@ -21,9 +21,10 @@ type Config struct {
 
 // Circonus defines the Circonus specific configuration options
 type Circonus struct {
-	IRONdbHost         string `json:"irondb_host" toml:"irondb_host" yaml:"irondb_host"`
-	IRONdbPort         string `json:"irondb_port" toml:"irondb_port" yaml:"irondb_port"`
-	StatsdAggregations `json:"statsd_aggregations" toml:"statsd_aggregations" yaml:"statsd_aggregations"`
+	IRONdbHost          string `json:"irondb_host" toml:"irondb_host" yaml:"irondb_host"`
+	IRONdbPort          string `json:"irondb_port" toml:"irondb_port" yaml:"irondb_port"`
+	StatsdFlushInterval int    `json:"statsd_interval" toml:"statsd_interval" yaml:"statsd_interval"`
+	StatsdAggregations  `json:"statsd_aggregations" toml:"statsd_aggregations" yaml:"statsd_aggregations"`
 }
 
 // Grafana defines the Grafana specific configuration options

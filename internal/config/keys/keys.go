@@ -46,6 +46,7 @@ const (
 	// IRONdb host
 	CirconusIRONdbHost               = "circonus.irondb_host"
 	CirconusIRONdbPort               = "circonus.irondb_port"
+	CirconusStatsdFlushInterval      = "circonus.statsd_interval"
 	CirconusStatsdAggregationsRemove = "circonus.statsd_aggregations.remove"
 	CirconusStatsdAggregationsList   = "circonus.statsd_aggregations.agg_list"
 

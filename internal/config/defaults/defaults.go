@@ -13,6 +13,8 @@ const (
 
 	// CirconusIRONdbHost is the hostname for IRONdb
 	CirconusIRONdbHost = ""
+	// StatsdFlushInterval is the interval at which we're receiving metrics
+	StatsdFlushInterval = 10
 
 	//
 	// Grafana Defaults

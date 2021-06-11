@@ -9,9 +9,11 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/circonus/grafana-ds-convert/debug"
+	"github.com/circonus/grafana-ds-convert/internal/config/defaults"
 )
 
 //TranslateResponseBody is a struct representing a
@@ -30,14 +32,15 @@ type TranslateRequestBody struct {
 
 //Client is a Circonus client
 type Client struct {
-	URL                *url.URL
-	HTTPClient         *http.Client
-	Debug              bool
-	StatsdAggregations []string
+	URL                 *url.URL
+	HTTPClient          *http.Client
+	Debug               bool
+	StatsdAggregations  []string
+	StatsdFlushInterval int
 }
 
 // New creates a new Circonus Client
-func New(irondbHost, irondbPort string, debug, removeAggs bool, aggs []string) (*Client, error) {
+func New(irondbHost, irondbPort string, debug, removeAggs bool, aggs []string, flush int) (*Client, error) {
 
 	// validate that irondb host was provided
 	if irondbHost == "" {
@@ -51,20 +54,27 @@ func New(irondbHost, irondbPort string, debug, removeAggs bool, aggs []string) (
 		Path:   "/extension/lua/graphite_translate",
 	}
 
+	// check if flush interval is set, if not use the default of 10
+	if flush == 0 {
+		flush = defaults.StatsdFlushInterval
+	}
+
 	if removeAggs {
 		// return the circonus client
 		return &Client{
-			HTTPClient:         http.DefaultClient,
-			URL:                u,
-			Debug:              debug,
-			StatsdAggregations: aggs,
+			HTTPClient:          http.DefaultClient,
+			URL:                 u,
+			Debug:               debug,
+			StatsdAggregations:  aggs,
+			StatsdFlushInterval: flush,
 		}, nil
 	}
 	// return the circonus client
 	return &Client{
-		HTTPClient: http.DefaultClient,
-		URL:        u,
-		Debug:      debug,
+		HTTPClient:          http.DefaultClient,
+		URL:                 u,
+		Debug:               debug,
+		StatsdFlushInterval: flush,
 	}, nil
 }
 
@@ -97,6 +107,10 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 		r := regexp.MustCompile(`(graphite:find\('[^']+'\))`)
 		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.HandleStatsdAggregations)
 	}
+
+	// add #min_period=X directive for better visualizations
+	translateResp.CAQL = fmt.Sprintf("#min_period=%s %s", strconv.Itoa(c.StatsdFlushInterval), translateResp.CAQL)
+
 	return translateResp.CAQL, nil
 }
 
