@@ -2,7 +2,6 @@ package grafana
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -15,12 +14,13 @@ import (
 
 //Grafana is a struct that holds the sdk client and other properties
 type Grafana struct {
-	Client *sdk.Client
-	Debug  bool
+	Client         *sdk.Client
+	CirconusClient *circonus.Client
+	Debug          bool
 }
 
 // New creates a new Grafana
-func New(url, apikey string, debug bool) Grafana {
+func New(url, apikey string, debug bool, c *circonus.Client) Grafana {
 	return Grafana{
 		Client: sdk.NewClient(url, apikey, http.DefaultClient),
 		Debug:  debug,
@@ -28,7 +28,7 @@ func New(url, apikey string, debug bool) Grafana {
 }
 
 // Translate is the main function which performs dashboard translations
-func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, datasource string) error {
+func (g Grafana) Translate(sourceFolder, destFolder, datasource string) error {
 
 	// validate src and dest folders
 	if sourceFolder == "" || destFolder == "" {
@@ -84,42 +84,29 @@ func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, data
 		// boardProps = append(boardProps, brdProp)
 	}
 
+	// start the dashboard conversion
+	err = g.ConvertDashboards(boards, datasource, destinationFolder)
+	if err != nil {
+		return err
+	}
+	log.Println("successfully converted dashboards, exiting.")
+	return nil
+}
+
+// ConvertDashboards iterates through dashboards and converts
+// their panels to use CAQL as data queries
+func (g Grafana) ConvertDashboards(boards []sdk.Board, datasource string, destinationFolder sdk.FoundBoard) error {
 	// loop through dashboards and their panels, translating "targetFull" or "target"
 	for _, board := range boards {
 		if len(board.Panels) >= 1 {
-			for _, panel := range board.Panels {
-				panel.Datasource = &datasource
-				targets := panel.GetTargets()
-				if len(*targets) >= 1 {
-					for _, target := range *targets {
-						if target.TargetFull != "" {
-							newTargetStr, err := circ.Translate(target.TargetFull)
-							if err != nil {
-								log.Println(err)
-								continue
-							}
-							target.Query = newTargetStr
-							target.Target = ""
-							target.TargetFull = ""
-							panel.SetTarget(&target)
-							continue
-						} else {
-							newTargetStr, err := circ.Translate(target.Target)
-							if err != nil {
-								log.Println(err)
-								continue
-							}
-							target.Query = newTargetStr
-							target.Target = ""
-							panel.SetTarget(&target)
-						}
-					}
-				}
+			// loop through panels and process them
+			err := g.ConvertPanels(board.Panels, datasource)
+			if err != nil {
+				return err
 			}
 		}
 		if g.Debug {
-			pp, _ := json.MarshalIndent(board, "", "    ")
-			log.Printf("Converted Dashboard:\n%s", string(pp))
+			debug.PrintMarshal("Converted Dashboard:", board)
 		}
 		newBoard := board
 		newBoard.ID = 0
@@ -133,8 +120,41 @@ func (g Grafana) Translate(circ *circonus.Client, sourceFolder, destFolder, data
 		if err != nil {
 			return err
 		}
-		pp, _ := json.MarshalIndent(sm, "", "    ")
-		log.Printf("Create Dashboard Response:\n%s", pp)
+		if g.Debug {
+			debug.PrintMarshal("Create Dashboard Response:", sm)
+		}
+	}
+	return nil
+}
+
+// ConvertPanels converts individual panels of a dashboard to use CAQL as data queries
+func (g Grafana) ConvertPanels(p []*sdk.Panel, datasource string) error {
+	for _, panel := range p {
+		panel.Datasource = &datasource
+		targets := panel.GetTargets()
+		if len(*targets) >= 1 {
+			for _, target := range *targets {
+				if target.TargetFull != "" {
+					newTargetStr, err := g.CirconusClient.Translate(target.TargetFull)
+					if err != nil {
+						return err
+					}
+					target.Query = newTargetStr
+					target.Target = ""
+					target.TargetFull = ""
+					panel.SetTarget(&target)
+					continue
+				} else {
+					newTargetStr, err := g.CirconusClient.Translate(target.Target)
+					if err != nil {
+						return err
+					}
+					target.Query = newTargetStr
+					target.Target = ""
+					panel.SetTarget(&target)
+				}
+			}
+		}
 	}
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 func PrintMarshal(msg string, v interface{}) {
 	log.Println(msg)
 	pp, _ := json.MarshalIndent(v, "", "    ")
-	fmt.Println(pp)
+	fmt.Println(string(pp))
 }
 
 // PrintJSONBytes pretty prints a JSON byte array
