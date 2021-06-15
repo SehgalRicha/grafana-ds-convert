@@ -22,8 +22,9 @@ type Grafana struct {
 // New creates a new Grafana
 func New(url, apikey string, debug bool, c *circonus.Client) Grafana {
 	return Grafana{
-		Client: sdk.NewClient(url, apikey, http.DefaultClient),
-		Debug:  debug,
+		Client:         sdk.NewClient(url, apikey, http.DefaultClient),
+		Debug:          debug,
+		CirconusClient: c,
 	}
 }
 
