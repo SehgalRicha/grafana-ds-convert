@@ -194,11 +194,11 @@ func getAppendCAQL(statsdAgg string) string {
 		split := strings.Split(statsdAgg, "_")
 		switch split[0] {
 		case "mean":
-			return fmt.Sprintf("histogram:percentile(%s) | histogram:mean()", split[1])
+			return fmt.Sprintf("histogram:clamp_percentile(0,%s) | histogram:mean()", split[1])
 		case "sum":
-			return fmt.Sprintf("histogram:percentile(%s) | histogram:sum()", split[1])
+			return fmt.Sprintf("histogram:clamp_percentile(0,%s) | histogram:sum()", split[1])
 		case "upper":
-			return fmt.Sprintf("histogram:percentile(%s) | histogram:max()", split[1])
+			return fmt.Sprintf("histogram:percentile(%s)", split[1])
 		}
 	}
 	return ""
