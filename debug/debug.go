@@ -22,5 +22,5 @@ func PrintJSONBytes(msg string, v []byte) {
 		log.Printf("error indenting JSON []byte: %v", err)
 		return
 	}
-	log.Printf("%s: %s\n", msg, out.String())
+	log.Printf("%s %s\n", msg, out.String())
 }

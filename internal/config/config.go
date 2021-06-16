@@ -21,8 +21,10 @@ type Config struct {
 
 // Circonus defines the Circonus specific configuration options
 type Circonus struct {
-	IRONdbHost          string `json:"irondb_host" toml:"irondb_host" yaml:"irondb_host"`
-	IRONdbPort          string `json:"irondb_port" toml:"irondb_port" yaml:"irondb_port"`
+	DirectIRONdb        bool   `json:"direct_irondb" toml:"direct_irondb" yaml:"direct_irondb"`
+	APIToken            string `json:"api_token" toml:"api_token" yaml:"api_token"`
+	Host                string `json:"host" toml:"host" yaml:"host"`
+	Port                string `json:"port" toml:"port" yaml:"port"`
 	StatsdFlushInterval int    `json:"statsd_interval" toml:"statsd_interval" yaml:"statsd_interval"`
 	StatsdAggregations  `json:"statsd_aggregations" toml:"statsd_aggregations" yaml:"statsd_aggregations"`
 }

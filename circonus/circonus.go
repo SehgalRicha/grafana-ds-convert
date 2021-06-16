@@ -37,21 +37,35 @@ type Client struct {
 	Debug               bool
 	StatsdAggregations  []string
 	StatsdFlushInterval int
+	APIToken            string
 }
 
 // New creates a new Circonus Client
-func New(irondbHost, irondbPort string, debug, removeAggs bool, aggs []string, flush int) (*Client, error) {
+func New(host, port, apiToken string, debug, removeAggs, directIRONdb bool, aggs []string, flush int) (*Client, error) {
 
-	// validate that irondb host was provided
-	if irondbHost == "" {
-		return nil, errors.New("must provide IRONdb host")
-	}
-
-	// set up URL
-	u := &url.URL{
-		Scheme: "http",
-		Host:   fmt.Sprintf("%s:%s", irondbHost, irondbPort),
-		Path:   "/extension/lua/graphite_translate",
+	// set up either direct IRONdb or (default) Circonus API URL
+	var u *url.URL
+	if directIRONdb {
+		if host == "" || port == "" {
+			return nil, errors.New("must provide both IRONdb host and port")
+		}
+		u = &url.URL{
+			Scheme: "http",
+			Host:   fmt.Sprintf("%s:%s", host, port),
+			Path:   "/extension/lua/graphite_translate",
+		}
+	} else {
+		if host == "" {
+			host = defaults.CirconusHost
+		}
+		if apiToken == "" {
+			return nil, errors.New("must provide Circonus API Token")
+		}
+		u = &url.URL{
+			Scheme: "https",
+			Host:   fmt.Sprintf("%s", host),
+			Path:   "irondb/extension/lua/public/graphite_translate",
+		}
 	}
 
 	// check if flush interval is set, if not use the default of 10
@@ -67,6 +81,7 @@ func New(irondbHost, irondbPort string, debug, removeAggs bool, aggs []string, f
 			Debug:               debug,
 			StatsdAggregations:  aggs,
 			StatsdFlushInterval: flush,
+			APIToken:            apiToken,
 		}, nil
 	}
 	// return the circonus client
@@ -75,6 +90,7 @@ func New(irondbHost, irondbPort string, debug, removeAggs bool, aggs []string, f
 		URL:                 u,
 		Debug:               debug,
 		StatsdFlushInterval: flush,
+		APIToken:            apiToken,
 	}, nil
 }
 
@@ -116,11 +132,22 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 
 // ExecuteTranslation handles the HTTP request for the translation
 func (c *Client) ExecuteTranslation(b []byte) (*TranslateResponseBody, error) {
+
+	// build the request
 	reqBody := bytes.NewBuffer(b)
 	req, err := http.NewRequest("POST", c.URL.String(), reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating HTTP request: %v", err)
 	}
+
+	// set API Token and other required headers
+	if c.APIToken != "" {
+		req.Header.Add("X-Circonus-Auth-Token", c.APIToken)
+		req.Header.Add("X-Circonus-App-Name", "Grafana Translator")
+	}
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+
 	// execute the HTTP request
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -135,12 +162,24 @@ func (c *Client) ExecuteTranslation(b []byte) (*TranslateResponseBody, error) {
 	var translateResp TranslateResponseBody
 	err = json.Unmarshal(respBody, &translateResp)
 	if err != nil {
+		// debug
+		if c.Debug {
+			debug.PrintMarshal("Translate Response Body:", translateResp)
+		}
 		return nil, fmt.Errorf("error unmarshaling translation response: %v", err)
 	}
 	if translateResp.CAQL == "" {
+		// debug
+		if c.Debug {
+			debug.PrintMarshal("Translate Response Body:", translateResp)
+		}
 		return nil, fmt.Errorf("error translating graphite query: null CAQL string")
 	}
 	if translateResp.Error != "" {
+		// debug
+		if c.Debug {
+			debug.PrintMarshal("Translate Response Body:", translateResp)
+		}
 		return nil, fmt.Errorf("error translating graphite query: %s", translateResp.Error)
 	}
 	// debug

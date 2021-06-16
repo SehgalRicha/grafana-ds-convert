@@ -57,10 +57,12 @@ to Circonus Analytics Query Language (CAQL).`,
 
 		// create circonus interface
 		circ, err := circonus.New(
-			viper.GetString(keys.CirconusIRONdbHost),
-			viper.GetString(keys.CirconusIRONdbPort),
+			viper.GetString(keys.CirconusHost),
+			viper.GetString(keys.CirconusPort),
+			viper.GetString(keys.CirconusAPIToken),
 			viper.GetBool(keys.Debug),
 			viper.GetBool(keys.CirconusStatsdAggregationsRemove),
+			viper.GetBool(keys.CirconusDirectIRONdb),
 			viper.GetStringSlice(keys.CirconusStatsdAggregationsList),
 			viper.GetInt(keys.CirconusStatsdFlushInterval),
 		)

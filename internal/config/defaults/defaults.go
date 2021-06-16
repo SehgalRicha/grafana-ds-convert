@@ -11,8 +11,8 @@ const (
 	// Circonus Defaults
 	//
 
-	// CirconusIRONdbHost is the hostname for IRONdb
-	CirconusIRONdbHost = ""
+	// CirconusHost is the hostname for IRONdb
+	CirconusHost = "api.circonus.com"
 	// StatsdFlushInterval is the interval at which we're receiving metrics
 	StatsdFlushInterval = 10
 

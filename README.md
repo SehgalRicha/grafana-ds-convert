@@ -30,8 +30,10 @@ debug = false
 # Circonus section defines connection params to either
 # IRONdb directly or the Circonus API
 [circonus]
-  irondb_host = "<HOST IP>"
-  irondb_port = "<PORT>"
+  direct_irondb = false # whether or not to communicate directly with IRONdb
+  host = "api.circonus.com" # defaults to api.circonus.com, can be set to IRONdb node URI
+  port = "" # defaults to empty for Circonus API, set to HTTP port of IRONdb for direct IRONdb functionality
+  api_token = "<API Token>" # required for Circonus API, not required for direct IRONdb
   # statsd_interval is the interval at which Circonus is receiving StatsD metrics (Default: 10s)
   statsd_interval = 10
   # statsd_aggregations section defines what to do with StatsD

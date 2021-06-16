@@ -31,6 +31,10 @@ func New(url, apikey string, debug bool, c *circonus.Client) Grafana {
 // Translate is the main function which performs dashboard translations
 func (g Grafana) Translate(sourceFolder, destFolder, datasource string) error {
 
+	if g.Debug {
+		log.Printf("Translation URL: %s", g.CirconusClient.URL.String())
+	}
+
 	// validate src and dest folders
 	if sourceFolder == "" || destFolder == "" {
 		return errors.New("must provide source and destination folders")
