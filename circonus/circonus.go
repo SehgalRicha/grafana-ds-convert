@@ -63,7 +63,7 @@ func New(host, port, apiToken string, debug, removeAggs, directIRONdb bool, aggs
 		}
 		u = &url.URL{
 			Scheme: "https",
-			Host:   fmt.Sprintf("%s", host),
+			Host:   host,
 			Path:   "irondb/extension/lua/public/graphite_translate",
 		}
 	}
