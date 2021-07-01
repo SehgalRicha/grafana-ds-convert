@@ -46,6 +46,7 @@ debug = false
 # managing assets within Grafana
 [grafana]
   api_token = "<Grafana API Token>"
+  anonymous_auth = false # boolean value if Grafana supports anonymous auth
   host = "<Grafana Host>"
   port = "<Grafana Port>"
   src_folder = "<Source Folder>"

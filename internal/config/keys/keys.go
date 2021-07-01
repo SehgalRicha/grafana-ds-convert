@@ -21,6 +21,9 @@ const (
 	// API token to access Grafana instance
 	GrafanaAPIToken = "grafana.api_token" //nolint:gosec
 
+	// If using anonymous auth
+	GrafanaAnonymousAuth = "grafana.anonymous_auth"
+
 	// Port for accessing Grafana
 	GrafanaPort = "grafana.port"
 
