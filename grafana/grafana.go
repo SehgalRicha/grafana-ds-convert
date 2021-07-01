@@ -9,7 +9,7 @@ import (
 
 	"github.com/circonus/grafana-ds-convert/circonus"
 	"github.com/circonus/grafana-ds-convert/debug"
-	"github.com/grafana-tools/sdk"
+	"github.com/rizkybiz/sdk"
 )
 
 //Grafana is a struct that holds the sdk client and other properties
