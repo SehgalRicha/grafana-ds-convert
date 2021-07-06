@@ -276,6 +276,8 @@ github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be h1:ta7tUOvsPHV
 github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be/go.mod h1:MIDFMn7db1kT65GmV94GzpX9Qdi7N/pQlwb+AN8wh+Q=
 github.com/rizkybiz/sdk v0.0.0-20210701174204-861366720c93 h1:GnDkguP9Ll/ilKeTxK9xAAD+FIWFYNc+AL6gc9euOkg=
 github.com/rizkybiz/sdk v0.0.0-20210701174204-861366720c93/go.mod h1:wDkbhhELkfZ8haRKoaQ+wMDJT+4BF88ix5t9O1/172Y=
+github.com/rizkybiz/sdk v0.0.0-20210706210222-5e011ac02b64 h1:x1q1L2rB8Dp3LpwghOFSaCMvBuN2L4XHCuSGqZ/kV3w=
+github.com/rizkybiz/sdk v0.0.0-20210706210222-5e011ac02b64/go.mod h1:wDkbhhELkfZ8haRKoaQ+wMDJT+4BF88ix5t9O1/172Y=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
