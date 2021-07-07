@@ -131,6 +131,9 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, datasource string) error {
 	for _, panel := range p {
 		panel.Datasource = &datasource
 		targets := panel.GetTargets()
+		if targets == nil {
+			continue
+		}
 		if len(*targets) >= 1 {
 			for _, target := range *targets {
 				if target.TargetFull != "" {
