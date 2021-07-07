@@ -55,6 +55,9 @@ func Validate() error {
 	} else if viper.GetString(keys.GrafanaHost) == "" {
 		return errors.New("Grafana host must be set")
 	}
+	if viper.GetString(keys.GrafanaSourceFolder) == "" || viper.GetString(keys.GrafanaDestFolder) == "" {
+		return errors.New("must provide source and destination Grafana folders")
+	}
 	return nil
 }
 

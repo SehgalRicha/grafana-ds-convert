@@ -35,40 +35,34 @@ func (g Grafana) Translate(sourceFolder, destFolder, datasource string) error {
 		log.Printf("Translation URL: %s", g.CirconusClient.URL.String())
 	}
 
-	// validate src and dest folders
-	if sourceFolder == "" || destFolder == "" {
-		return errors.New("must provide source and destination folders")
-	}
-
-	// get grafana source folder
-	foundSrcFolders, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeFolder), sdk.SearchQuery(sourceFolder))
+	// get grafana source and destination folders
+	var srcFolder sdk.FoundBoard
+	var dstFolder sdk.FoundBoard
+	foundFolders, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeFolder))
 	if err != nil {
-		return fmt.Errorf("error fetching grafana dashboard folder: %v", err)
+		return fmt.Errorf("error fetching grafana dashboard folders: %v", err)
 	}
-	if len(foundSrcFolders) > 1 {
-		return fmt.Errorf("found more than one folder, please check folder name")
+	for _, folder := range foundFolders {
+		if folder.Title == sourceFolder {
+			srcFolder = folder
+		} else if folder.Title == destFolder {
+			dstFolder = folder
+		}
+	}
+	if srcFolder.Title == "" {
+		return errors.New("no match found for Grafana source folder")
+	}
+	if dstFolder.Title == "" {
+		return errors.New("no match found for Grafana destination folder")
 	}
 	// debug
 	if g.Debug {
-		debug.PrintMarshal("Found source folder:", foundSrcFolders)
+		debug.PrintMarshal("Found source folder:", srcFolder)
+		debug.PrintMarshal("Found destination folder:", destFolder)
 	}
-
-	// get grafana destination folder
-	foundDestFolders, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeFolder), sdk.SearchQuery(destFolder))
-	if err != nil {
-		return fmt.Errorf("error fetching grafana dashboard folder: %v", err)
-	}
-	if len(foundDestFolders) > 1 {
-		return fmt.Errorf("found more than one folder, please check folder name")
-	}
-	// debug
-	if g.Debug {
-		debug.PrintMarshal("Found destination folder:", foundDestFolders)
-	}
-	destinationFolder := foundDestFolders[0]
 
 	// get dashboards within found folder
-	foundBoards, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeDashboard), sdk.SearchFolderID(int(foundSrcFolders[0].ID)))
+	foundBoards, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeDashboard), sdk.SearchFolderID(int(srcFolder.ID)))
 	if err != nil {
 		return fmt.Errorf("error fetching dashboards within folder: %v", err)
 	}
@@ -90,7 +84,7 @@ func (g Grafana) Translate(sourceFolder, destFolder, datasource string) error {
 	}
 
 	// start the dashboard conversion
-	err = g.ConvertDashboards(boards, datasource, destinationFolder)
+	err = g.ConvertDashboards(boards, datasource, dstFolder)
 	if err != nil {
 		return err
 	}
