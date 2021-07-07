@@ -33,6 +33,7 @@ type Circonus struct {
 type Grafana struct {
 	Host              string `json:"host" toml:"host" yaml:"host"`
 	Port              string `json:"port" toml:"port" yaml:"port"`
+	Path              string `json:"path" toml:"path" yaml:"path"`
 	APIToken          string `json:"api_token" toml:"api_token" yaml:"api_token"`
 	AnonymousAuth     bool   `json:"anonymous_auth" toml:"anonymous_auth" yaml:"anonymous_auth"`
 	TLS               bool   `json:"secure" toml:"secure" yaml:"secure"`
@@ -51,8 +52,8 @@ type StatsdAggregations struct {
 func Validate() error {
 	if viper.GetString(keys.GrafanaAPIToken) == "" && !viper.GetBool(keys.GrafanaAnonymousAuth) {
 		return errors.New("Grafana API Token must be set")
-	} else if viper.GetString(keys.GrafanaHost) == "" || viper.GetString(keys.GrafanaPort) == "" {
-		return errors.New("Grafana host and port must be set")
+	} else if viper.GetString(keys.GrafanaHost) == "" {
+		return errors.New("Grafana host must be set")
 	}
 	return nil
 }

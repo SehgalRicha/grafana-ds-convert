@@ -24,11 +24,14 @@ const (
 	// If using anonymous auth
 	GrafanaAnonymousAuth = "grafana.anonymous_auth"
 
-	// Port for accessing Grafana
-	GrafanaPort = "grafana.port"
-
 	// Host where Grafana is running
 	GrafanaHost = "grafana.host"
+
+	// Port where Grafana server is listening
+	GrafanaPort = "grafana.port"
+
+	// Optional grafana path
+	GrafanaPath = "grafana.path"
 
 	// Use TLS or not when issuing API calls to grafana
 	GrafanaTLS = "grafana.secure"

@@ -50,9 +50,17 @@ to Circonus Analytics Query Language (CAQL).`,
 		// Create Grafana API URL
 		var url string
 		if viper.GetBool(keys.GrafanaTLS) {
-			url = fmt.Sprintf("https://%s:%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPort))
+			if viper.GetString(keys.GrafanaPort) != "" {
+				url = fmt.Sprintf("https://%s:%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPort), viper.GetString(keys.GrafanaPath))
+			} else {
+				url = fmt.Sprintf("https://%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPath))
+			}
 		} else {
-			url = fmt.Sprintf("http://%s:%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPort))
+			if viper.GetString(keys.GrafanaPort) != "" {
+				url = fmt.Sprintf("http://%s:%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPort), viper.GetString(keys.GrafanaPath))
+			} else {
+				url = fmt.Sprintf("http://%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPath))
+			}
 		}
 
 		// create circonus interface

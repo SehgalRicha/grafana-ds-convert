@@ -46,9 +46,10 @@ debug = false
 # managing assets within Grafana
 [grafana]
   api_token = "<Grafana API Token>"
-  anonymous_auth = false # boolean value if Grafana supports anonymous auth
-  host = "<Grafana Host>"
-  port = "<Grafana Port>"
+  anonymous_auth = false # boolean value if Grafana supports anonymous auth, comment out api token if set
+  host = "<Grafana Host>" # e.g. "grafana.example.com"
+  port = "<Grafana Port>" # optional
+  path = "<Grafana Path>" # optional e.g. "grafana.example.com/<path>" include the leading "/"
   src_folder = "<Source Folder>"
   dest_folder = "<Destination Folder>"
   # whether or not to connect with HTTP or HTTPS
