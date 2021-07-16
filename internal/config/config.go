@@ -31,15 +31,16 @@ type Circonus struct {
 
 // Grafana defines the Grafana specific configuration options
 type Grafana struct {
-	Host              string `json:"host" toml:"host" yaml:"host"`
-	Port              string `json:"port" toml:"port" yaml:"port"`
-	Path              string `json:"path" toml:"path" yaml:"path"`
-	APIToken          string `json:"api_token" toml:"api_token" yaml:"api_token"`
-	AnonymousAuth     bool   `json:"anonymous_auth" toml:"anonymous_auth" yaml:"anonymous_auth"`
-	TLS               bool   `json:"secure" toml:"secure" yaml:"secure"`
-	SourceFolder      string `json:"src_folder" toml:"src_folder" yaml:"src_folder"`
-	DestinationFolder string `json:"dest_folder" toml:"dest_folder" yaml:"dest_folder"`
-	Datasource        string `json:"datasource" toml:"datasource" yaml:"datasource"`
+	Host                string   `json:"host" toml:"host" yaml:"host"`
+	Port                string   `json:"port" toml:"port" yaml:"port"`
+	Path                string   `json:"path" toml:"path" yaml:"path"`
+	APIToken            string   `json:"api_token" toml:"api_token" yaml:"api_token"`
+	AnonymousAuth       bool     `json:"anonymous_auth" toml:"anonymous_auth" yaml:"anonymous_auth"`
+	TLS                 bool     `json:"secure" toml:"secure" yaml:"secure"`
+	SourceFolder        string   `json:"src_folder" toml:"src_folder" yaml:"src_folder"`
+	DestinationFolder   string   `json:"dest_folder" toml:"dest_folder" yaml:"dest_folder"`
+	GraphiteDatasources []string `json:"graphite_datasources" toml:"graphite_datasources" yaml:"graphite_datasources"`
+	CirconusDatasource  string   `json:"circonus_datasource" toml:"circonus_datasource" yaml:"circonus_datasource"`
 }
 
 // StatsdAggregations defines the statsd_aggregations options

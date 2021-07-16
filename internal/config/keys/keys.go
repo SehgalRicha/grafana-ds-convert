@@ -42,8 +42,11 @@ const (
 	// Grafana destination folder
 	GrafanaDestFolder = "grafana.dest_folder"
 
+	// Graphite data sources
+	GrafanaGraphiteDatasources = "grafana.graphite_datasources"
+
 	// Grafana Circonus Datasource name
-	GrafanaDatasource = "grafana.datasource"
+	GrafanaCirconusDatasource = "grafana.circonus_datasource"
 
 	//
 	// Circonus

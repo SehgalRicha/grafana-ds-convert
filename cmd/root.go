@@ -85,7 +85,8 @@ to Circonus Analytics Query Language (CAQL).`,
 		err = gclient.Translate(
 			viper.GetString(keys.GrafanaSourceFolder),
 			viper.GetString(keys.GrafanaDestFolder),
-			viper.GetString(keys.GrafanaDatasource),
+			viper.GetString(keys.GrafanaCirconusDatasource),
+			viper.GetStringSlice(keys.GrafanaGraphiteDatasources),
 		)
 		if err != nil {
 			log.Fatalf("error translating dashboards: %v", err)

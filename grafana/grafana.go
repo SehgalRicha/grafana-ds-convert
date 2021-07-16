@@ -29,7 +29,7 @@ func New(url, apikey string, debug bool, c *circonus.Client) Grafana {
 }
 
 // Translate is the main function which performs dashboard translations
-func (g Grafana) Translate(sourceFolder, destFolder, datasource string) error {
+func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, graphiteDatasources []string) error {
 
 	if g.Debug {
 		log.Printf("Translation URL: %s", g.CirconusClient.URL.String())
@@ -84,7 +84,7 @@ func (g Grafana) Translate(sourceFolder, destFolder, datasource string) error {
 	}
 
 	// start the dashboard conversion
-	err = g.ConvertDashboards(boards, datasource, dstFolder)
+	err = g.ConvertDashboards(boards, circonusDatasource, dstFolder, graphiteDatasources)
 	if err != nil {
 		return err
 	}
@@ -94,12 +94,12 @@ func (g Grafana) Translate(sourceFolder, destFolder, datasource string) error {
 
 // ConvertDashboards iterates through dashboards and converts
 // their panels to use CAQL as data queries
-func (g Grafana) ConvertDashboards(boards []sdk.Board, datasource string, destinationFolder sdk.FoundBoard) error {
+func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string, destinationFolder sdk.FoundBoard, graphiteDatasources []string) error {
 	// loop through dashboards and their panels, translating "targetFull" or "target"
 	for _, board := range boards {
 		if len(board.Panels) >= 1 {
 			// loop through panels and process them
-			err := g.ConvertPanels(board.Panels, datasource)
+			err := g.ConvertPanels(board.Panels, circonusDatasource, graphiteDatasources)
 			if err != nil {
 				log.Println(fmt.Errorf("error:\n Dashboard: %s\n %v", board.Title, err))
 			}
@@ -127,9 +127,12 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, datasource string, destin
 }
 
 // ConvertPanels converts individual panels of a dashboard to use CAQL as data queries
-func (g Grafana) ConvertPanels(p []*sdk.Panel, datasource string) error {
+func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphiteDatasources []string) error {
 	for _, panel := range p {
-		panel.Datasource = &datasource
+		if len(graphiteDatasources) > 0 && !contains(graphiteDatasources, *panel.Datasource) {
+			continue
+		}
+		panel.Datasource = &circonusDatasource
 		targets := panel.GetTargets()
 		if targets == nil {
 			continue
@@ -159,4 +162,13 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, datasource string) error {
 		}
 	}
 	return nil
+}
+
+func contains(strings []string, test string) bool {
+	for _, s := range strings {
+		if s == test {
+			return true
+		}
+	}
+	return false
 }

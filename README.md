@@ -56,4 +56,6 @@ debug = false
   secure = false
   # name of the configured Circonus datasource
   datasource = "<Datasource Name>"
+  # list of graphite datasource names to convert, leave empty to convert all
+  graphite_datasources = ["ds1", "ds2", "ds3"]
 ```
