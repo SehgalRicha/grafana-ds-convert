@@ -101,7 +101,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, datasource string, destin
 			// loop through panels and process them
 			err := g.ConvertPanels(board.Panels, datasource)
 			if err != nil {
-				return err
+				log.Println(fmt.Errorf("error:\n Dashboard: %s\n %v", board.Title, err))
 			}
 		}
 		if g.Debug {
@@ -117,7 +117,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, datasource string, destin
 		}
 		sm, err := g.Client.SetDashboard(context.Background(), newBoard, setDashParams)
 		if err != nil {
-			return err
+			log.Println(fmt.Errorf("error:\n Dashboard: %s\n %v", board.Title, err))
 		}
 		if g.Debug {
 			debug.PrintMarshal("Create Dashboard Response:", sm)
@@ -139,7 +139,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, datasource string) error {
 				if target.TargetFull != "" {
 					newTargetStr, err := g.CirconusClient.Translate(target.TargetFull)
 					if err != nil {
-						return err
+						return fmt.Errorf("%v:\n  Panel: %s\n  Target: %s", err, panel.Title, target.TargetFull)
 					}
 					target.Query = newTargetStr
 					target.Target = ""
@@ -149,7 +149,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, datasource string) error {
 				} else {
 					newTargetStr, err := g.CirconusClient.Translate(target.Target)
 					if err != nil {
-						return err
+						return fmt.Errorf("%v:\n  Panel: %s\n  Target: %s", err, panel.Title, target.Target)
 					}
 					target.Query = newTargetStr
 					target.Target = ""
