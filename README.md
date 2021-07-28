@@ -58,4 +58,6 @@ debug = false
   circonus_datasource = "<Datasource Name>"
   # list of graphite datasource names to convert, leave empty to convert all
   graphite_datasources = ["ds1", "ds2", "ds3"]
+  # the below setting nulls out alerts on panels
+  no_alerts = false
 ```

@@ -17,14 +17,16 @@ type Grafana struct {
 	Client         *sdk.Client
 	CirconusClient *circonus.Client
 	Debug          bool
+	NoAlerts       bool
 }
 
 // New creates a new Grafana
-func New(url, apikey string, debug bool, c *circonus.Client) Grafana {
+func New(url, apikey string, debug, noAlerts bool, c *circonus.Client) Grafana {
 	return Grafana{
 		Client:         sdk.NewClient(url, apikey, http.DefaultClient, debug),
 		Debug:          debug,
 		CirconusClient: c,
+		NoAlerts:       noAlerts,
 	}
 }
 
@@ -144,6 +146,9 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 		targets := panel.GetTargets()
 		if targets == nil {
 			continue
+		}
+		if g.NoAlerts && panel.Alert != nil {
+			panel.Alert = nil
 		}
 		if len(*targets) >= 1 {
 			for _, target := range *targets {

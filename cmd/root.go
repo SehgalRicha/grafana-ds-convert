@@ -79,7 +79,7 @@ to Circonus Analytics Query Language (CAQL).`,
 		}
 
 		// create grafana API interface
-		gclient := grafana.New(url, viper.GetString(keys.GrafanaAPIToken), viper.GetBool(keys.Debug), circ)
+		gclient := grafana.New(url, viper.GetString(keys.GrafanaAPIToken), viper.GetBool(keys.Debug), viper.GetBool(keys.GrafanaNoAlerts), circ)
 
 		// execute the translation
 		err = gclient.Translate(

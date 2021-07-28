@@ -41,6 +41,7 @@ type Grafana struct {
 	DestinationFolder   string   `json:"dest_folder" toml:"dest_folder" yaml:"dest_folder"`
 	GraphiteDatasources []string `json:"graphite_datasources" toml:"graphite_datasources" yaml:"graphite_datasources"`
 	CirconusDatasource  string   `json:"circonus_datasource" toml:"circonus_datasource" yaml:"circonus_datasource"`
+	NoAlerts            bool     `json:"no_alerts" toml:"no_alerts" yaml:"no_alerts"`
 }
 
 // StatsdAggregations defines the statsd_aggregations options

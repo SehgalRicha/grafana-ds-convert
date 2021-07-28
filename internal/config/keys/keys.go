@@ -48,6 +48,9 @@ const (
 	// Grafana Circonus Datasource name
 	GrafanaCirconusDatasource = "grafana.circonus_datasource"
 
+	// Grafana dont populate alert bodies
+	GrafanaNoAlerts = "grafana.no_alerts"
+
 	//
 	// Circonus
 	//
