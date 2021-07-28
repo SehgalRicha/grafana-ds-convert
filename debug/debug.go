@@ -24,3 +24,8 @@ func PrintJSONBytes(msg string, v []byte) {
 	}
 	log.Printf("%s %s\n", msg, out.String())
 }
+
+//Print allows for generic debug printing
+func Print(msg string, v interface{}) {
+	log.Printf("%s%v", msg, v)
+}

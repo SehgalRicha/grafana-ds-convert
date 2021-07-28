@@ -97,6 +97,9 @@ func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, 
 func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string, destinationFolder sdk.FoundBoard, graphiteDatasources []string) error {
 	// loop through dashboards and their panels, translating "targetFull" or "target"
 	for _, board := range boards {
+		if g.Debug {
+			debug.Print("Converting Dashboard:", board.Title)
+		}
 		if len(board.Panels) >= 1 {
 			// loop through panels and process them
 			err := g.ConvertPanels(board.Panels, circonusDatasource, graphiteDatasources)
@@ -105,7 +108,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 			}
 		}
 		if g.Debug {
-			debug.PrintMarshal("Converted Dashboard:", board)
+			debug.PrintMarshal("Converted Dashboard: ", board)
 		}
 		newBoard := board
 		newBoard.ID = 0
@@ -129,8 +132,13 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 // ConvertPanels converts individual panels of a dashboard to use CAQL as data queries
 func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphiteDatasources []string) error {
 	for _, panel := range p {
-		if len(graphiteDatasources) > 0 && !contains(graphiteDatasources, *panel.Datasource) {
-			continue
+		if g.Debug {
+			debug.Print("Converting Panel: ", panel.Title)
+		}
+		if panel.Datasource != nil {
+			if len(graphiteDatasources) > 0 && !contains(graphiteDatasources, *panel.Datasource) {
+				continue
+			}
 		}
 		panel.Datasource = &circonusDatasource
 		targets := panel.GetTargets()
@@ -142,7 +150,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				if target.TargetFull != "" {
 					newTargetStr, err := g.CirconusClient.Translate(target.TargetFull)
 					if err != nil {
-						return fmt.Errorf("%v:\n  Panel: %s\n  Target: %s", err, panel.Title, target.TargetFull)
+						log.Print(fmt.Errorf("%v:\n  Panel: %s\n  Target: %s", err, panel.Title, target.TargetFull))
 					}
 					target.Query = newTargetStr
 					target.Target = ""
@@ -152,7 +160,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				} else {
 					newTargetStr, err := g.CirconusClient.Translate(target.Target)
 					if err != nil {
-						return fmt.Errorf("%v:\n  Panel: %s\n  Target: %s", err, panel.Title, target.Target)
+						log.Print(fmt.Errorf("%v:\n  Panel: %s\n  Target: %s", err, panel.Title, target.Target))
 					}
 					target.Query = newTargetStr
 					target.Target = ""

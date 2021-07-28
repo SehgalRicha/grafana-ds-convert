@@ -55,7 +55,7 @@ debug = false
   # whether or not to connect with HTTP or HTTPS
   secure = false
   # name of the configured Circonus datasource
-  datasource = "<Datasource Name>"
+  circonus_datasource = "<Datasource Name>"
   # list of graphite datasource names to convert, leave empty to convert all
   graphite_datasources = ["ds1", "ds2", "ds3"]
 ```
