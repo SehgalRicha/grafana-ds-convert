@@ -198,7 +198,7 @@ func (c *Client) HandleStatsdAggregations(s string) string {
 	if contains(c.StatsdAggregations, aggNode) {
 		appendCAQL := getAppendCAQL(aggNode)
 		splits = splits[:len(splits)-1]
-		return fmt.Sprintf("graphite:find('%s') %s", strings.Join(splits, "."), appendCAQL)
+		return fmt.Sprintf("graphite:find('%s') | %s", strings.Join(splits, "."), appendCAQL)
 	}
 	return s
 }
