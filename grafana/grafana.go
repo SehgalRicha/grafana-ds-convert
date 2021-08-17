@@ -7,9 +7,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bdunavant/sdk"
 	"github.com/circonus/grafana-ds-convert/circonus"
 	"github.com/circonus/grafana-ds-convert/debug"
-	"github.com/rizkybiz/sdk"
 )
 
 //Grafana is a struct that holds the sdk client and other properties
@@ -152,6 +152,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 		}
 		if len(*targets) >= 1 {
 			for _, target := range *targets {
+				target.QueryType = "caql"
 				if target.TargetFull != "" {
 					newTargetStr, err := g.CirconusClient.Translate(target.TargetFull)
 					if err != nil {
