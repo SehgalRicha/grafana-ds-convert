@@ -57,6 +57,7 @@ const (
 
 	CirconusDirectIRONdb             = "circonus.direct_irondb"
 	CirconusAPIToken                 = "circonus.api_token"
+	CirconusAccountId                = "circonus.account_id"
 	CirconusHost                     = "circonus.host"
 	CirconusPort                     = "circonus.port"
 	CirconusStatsdFlushInterval      = "circonus.statsd_interval"

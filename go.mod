@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/bdunavant/sdk v0.0.1
+	github.com/circonus-labs/gosnowth v1.10.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pelletier/go-toml v1.9.3
 	github.com/pkg/errors v0.9.1

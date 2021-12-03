@@ -14,45 +14,55 @@ import (
 
 	"github.com/circonus/grafana-ds-convert/logger"
 	"github.com/circonus/grafana-ds-convert/internal/config/defaults"
+	"github.com/circonus-labs/gosnowth"
 )
 
-//TranslateResponseBody is a struct representing a
-//response from the graphite translator service
+//TranslateResponseBody is a struct representing a response from the graphite translator service
 type TranslateResponseBody struct {
 	Input string `json:"input"`
 	CAQL  string `json:"caql"`
 	Error string `json:"error"`
 }
 
-//TranslateRequestBody is a struct representing a
-//request to the graphite translator service
+//TranslateRequestBody is a struct representing a request to the graphite translator service
 type TranslateRequestBody struct {
 	Query string `json:"q"`
 }
 
 //Client is a Circonus client
 type Client struct {
-	URL                 *url.URL
-	HTTPClient          *http.Client
-	Debug               bool
-	StatsdAggregations  []string
-	StatsdFlushInterval int
-	APIToken            string
+	GraphiteTranslateURL *url.URL
+	IRONdbFindTagsURL    *url.URL
+	HTTPClient           *http.Client
+	Debug                bool
+	StatsdAggregations   []string
+	StatsdFlushInterval  int
+	APIToken             string
+    AccountId            int
 }
 
 // New creates a new Circonus Client
-func New(host, port, apiToken string, debug, removeAggs, directIRONdb bool, aggs []string, flush int) (*Client, error) {
+func New(host, port, apiToken string, accountId int, debug, removeAggs, directIRONdb bool, aggs []string, flush int) (*Client, error) {
 
 	// set up either direct IRONdb or (default) Circonus API URL
-	var u *url.URL
+	var graphite_u *url.URL
+	var findtags_u *url.URL
 	if directIRONdb {
 		if host == "" || port == "" {
 			return nil, errors.New("must provide both IRONdb host and port")
 		}
-		u = &url.URL{
+		graphite_u = &url.URL{
 			Scheme: "http",
 			Host:   fmt.Sprintf("%s:%s", host, port),
 			Path:   "/extension/lua/graphite_translate",
+		}
+		findtags_u = &url.URL{
+			Scheme: "http",
+			Host:   fmt.Sprintf("%s:%s", host, port),
+			Path:   "/find/tags",
+		}
+		if accountId <= 0 {
+			return nil, errors.New("must provide Circonus Account Id")
 		}
 	} else {
 		if host == "" {
@@ -61,10 +71,15 @@ func New(host, port, apiToken string, debug, removeAggs, directIRONdb bool, aggs
 		if apiToken == "" {
 			return nil, errors.New("must provide Circonus API Token")
 		}
-		u = &url.URL{
+		graphite_u = &url.URL{
 			Scheme: "https",
 			Host:   host,
 			Path:   "irondb/extension/lua/public/graphite_translate",
+		}
+		findtags_u = &url.URL{
+			Scheme: "https",
+			Host:   host,
+			Path:   "irondb/find/tags",
 		}
 	}
 
@@ -74,11 +89,13 @@ func New(host, port, apiToken string, debug, removeAggs, directIRONdb bool, aggs
 	}
 
     cli := &Client{
-		HTTPClient:          http.DefaultClient,
-		URL:                 u,
-		Debug:               debug,
-		StatsdFlushInterval: flush,
-		APIToken:            apiToken,
+		HTTPClient:           http.DefaultClient,
+		GraphiteTranslateURL: graphite_u,
+		IRONdbFindTagsURL:    findtags_u,
+		Debug:                debug,
+		StatsdFlushInterval:  flush,
+		APIToken:             apiToken,
+		AccountId:            accountId,
 	}
     if removeAggs {
         cli.StatsdAggregations = aggs
@@ -128,7 +145,7 @@ func (c *Client) ExecuteTranslation(b []byte) (*TranslateResponseBody, error) {
 
 	// build the request
 	reqBody := bytes.NewBuffer(b)
-	req, err := http.NewRequest("POST", c.URL.String(), reqBody)
+	req, err := http.NewRequest("POST", c.GraphiteTranslateURL.String(), reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating HTTP request: %v", err)
 	}
@@ -182,13 +199,79 @@ func (c *Client) ExecuteTranslation(b []byte) (*TranslateResponseBody, error) {
 	return &translateResp, nil
 }
 
+func (c *Client) IRONdbFindTags(metricSearchPattern string) ([]gosnowth.FindTagsItem, error) {
+
+    c.IRONdbFindTagsURL.RawQuery = "query=and(__name:[graphite]" + metricSearchPattern + ")"
+
+	req, err := http.NewRequest("GET", c.IRONdbFindTagsURL.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating HTTP request: %v", err)
+	}
+
+	// set API Token and other required headers
+	if c.APIToken != "" {
+		req.Header.Add("X-Circonus-Auth-Token", c.APIToken)
+		req.Header.Add("X-Circonus-App-Name", "Grafana Translator")
+        if( c.AccountId > 0 ) {
+		    req.Header.Add("X-Circonus-Account-Id", strconv.FormatInt(int64(c.AccountId), 10))
+        }
+	}
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+
+	// execute the HTTP request
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching find/tags: %v", err)
+	}
+    if resp.StatusCode != 200 {
+        return nil, fmt.Errorf("error find/tags returned code: %d",  resp.StatusCode)
+    }
+	defer resp.Body.Close()
+	// read the body from the response into []byte
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading find/tags response body: %v", err)
+	}
+    var findtagsResp []gosnowth.FindTagsItem
+	err = json.Unmarshal(respBody, &findtagsResp)
+	if err != nil {
+		// debug
+		if c.Debug {
+			logger.PrintMarshal(logger.LvlDebug, "Find Tags Response Body:", findtagsResp)
+		}
+		return nil, fmt.Errorf("error unmarshaling find tags response: %v", err)
+	}
+	if c.Debug {
+		logger.PrintMarshal(logger.LvlDebug, "Translate Response Body:", findtagsResp)
+	}
+	return findtagsResp, nil
+}
+
+
 // HandleStatsdAggregations will append the correct CAQL
 func (c *Client) HandleStatsdAggregations(s string) string {
 	r := regexp.MustCompile(`graphite:find\('([^']+)'\)`)
 	metricName := r.FindStringSubmatch(s)
-    // TODO - take metric name, and substitute $grafana variables into *
-    // TODO - query /find/tags for the metric name pattern to ensure it exists and to get the type(s)
-    // TODO - if no results error out out and continue
+    // take metric name, and substitute $grafana variables into *
+    regGrafanaSquash := regexp.MustCompile(`\$[^.]+`)
+    metricSearchPattern := regGrafanaSquash.ReplaceAll([]byte(metricName[1]), []byte("*"))
+
+    // query /find/tags for the metric name pattern
+    findtagsResponseSlice, err := c.IRONdbFindTags( string(metricSearchPattern) )
+    if err != nil {
+        logger.Printf(logger.LvlError, err.Error())
+        return "" // TODO - return error
+    }
+    if 0 == len(findtagsResponseSlice) {
+        // if no results error out out and continue
+        logger.Printf(logger.LvlError, "Pattern %s has no metrics inside of Circonus IRONdb", metricSearchPattern)
+        return "" // TODO return error
+    }
+    // TODO get the statsd_type from the tags
+
+    // TODO ensure it exists and to get the type(s)
+
     // TODO - validate they are all the same type
       // TODO - if not error out and continue
 

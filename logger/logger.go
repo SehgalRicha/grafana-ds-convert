@@ -34,5 +34,5 @@ func PrintJSONBytes(level LogLevel, msg string, v []byte) {
 
 //Print allows for generic debug printing
 func Printf(level LogLevel, msg string, v ...interface{}) {
-	log.Printf("%s %s%v", level, msg, v)
+	log.Printf("%s %s", level, fmt.Sprintf(msg, v...))
 }
