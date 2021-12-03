@@ -9,9 +9,10 @@ import (
 
 type LogLevel string
 const (
-    LvlDebug = LogLevel("DEBUG")
-    LvlError = LogLevel("ERROR")
-    LvlInfo  = LogLevel("INFO")
+    LvlDebug   = LogLevel("DEBUG")
+    LvlError   = LogLevel("ERROR")
+    LvlWarning = LogLevel("WARNING")
+    LvlInfo    = LogLevel("INFO")
 )
 
 // PrintMarshal pretty prints a struct for use in debugging

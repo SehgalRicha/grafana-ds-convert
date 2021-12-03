@@ -96,7 +96,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 			// loop through panels and process them
 			err := g.ConvertPanels(board.Panels, circonusDatasource, graphiteDatasources)
 			if err != nil {
-				logger.Printf(logger.LvlError, "Dashboard: %s %v", board.Title, err)
+                logger.Printf(logger.LvlError, "Dashboard %d: %s %v", board.ID, board.Title, err)
 			}
 		}
 		if g.Debug {
@@ -144,7 +144,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				if target.TargetFull != "" {
 					newTargetStr, err := g.CirconusClient.Translate(target.TargetFull)
 					if err != nil {
-						logger.Printf(logger.LvlError, "%v:  Panel: %s Target: %s", err, panel.Title, target.TargetFull)
+						logger.Printf(logger.LvlError, "Panel: %s Target: %s %v", panel.Title, target.TargetFull, err)
 					}
 					target.Query = newTargetStr
 					target.Target = ""
@@ -154,7 +154,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				} else {
 					newTargetStr, err := g.CirconusClient.Translate(target.Target)
 					if err != nil {
-						logger.Printf(logger.LvlError, "%v: Panel: %s Target: %s", err, panel.Title, target.Target)
+						logger.Printf(logger.LvlError, "Panel: %s Target: %s %v", err, panel.Title, target.Target, err)
 					}
 					target.Query = newTargetStr
 					target.Target = ""
