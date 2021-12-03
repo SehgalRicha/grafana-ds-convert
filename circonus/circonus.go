@@ -73,25 +73,17 @@ func New(host, port, apiToken string, debug, removeAggs, directIRONdb bool, aggs
 		flush = defaults.StatsdFlushInterval
 	}
 
-	if removeAggs {
-		// return the circonus client
-		return &Client{
-			HTTPClient:          http.DefaultClient,
-			URL:                 u,
-			Debug:               debug,
-			StatsdAggregations:  aggs,
-			StatsdFlushInterval: flush,
-			APIToken:            apiToken,
-		}, nil
-	}
-	// return the circonus client
-	return &Client{
+    cli := &Client{
 		HTTPClient:          http.DefaultClient,
 		URL:                 u,
 		Debug:               debug,
 		StatsdFlushInterval: flush,
 		APIToken:            apiToken,
-	}, nil
+	}
+    if removeAggs {
+        cli.StatsdAggregations = aggs
+    }
+    return cli, nil
 }
 
 // Translate translates a graphite query into a CAQL query
@@ -120,6 +112,7 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 	// check for statsd aggregations to replace, if found, replace them and add
 	// to the CAQL query the correct CAQL function
 	if len(c.StatsdAggregations) > 0 {
+        // capture the entire graphite:find because we want to replace it's contents later
 		r := regexp.MustCompile(`(graphite:find\('[^']+'\))`)
 		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.HandleStatsdAggregations)
 	}
@@ -193,6 +186,14 @@ func (c *Client) ExecuteTranslation(b []byte) (*TranslateResponseBody, error) {
 func (c *Client) HandleStatsdAggregations(s string) string {
 	r := regexp.MustCompile(`graphite:find\('([^']+)'\)`)
 	metricName := r.FindStringSubmatch(s)
+    // TODO - take metric name, and substitute $grafana variables into *
+    // TODO - query /find/tags for the metric name pattern to ensure it exists and to get the type(s)
+    // TODO - if no results error out out and continue
+    // TODO - validate they are all the same type
+      // TODO - if not error out and continue
+
+    // TODO if statsd counter don't remove the name, but do appendCAQL
+    // else do the stuff below
 	splits := strings.Split(metricName[1], ".")
 	aggNode := splits[len(splits)-1]
 	if contains(c.StatsdAggregations, aggNode) {
