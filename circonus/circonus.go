@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/circonus/grafana-ds-convert/logger"
-	"github.com/circonus/grafana-ds-convert/internal/config/defaults"
 	"github.com/circonus-labs/gosnowth"
+	"github.com/circonus/grafana-ds-convert/internal/config/defaults"
+	"github.com/circonus/grafana-ds-convert/logger"
 )
 
 //TranslateResponseBody is a struct representing a response from the graphite translator service
@@ -38,7 +38,7 @@ type Client struct {
 	StatsdAggregations   []string
 	StatsdFlushInterval  int
 	APIToken             string
-    AccountId            int
+	AccountId            int
 }
 
 // New creates a new Circonus Client
@@ -88,7 +88,7 @@ func New(host, port, apiToken string, accountId int, debug, removeAggs, directIR
 		flush = defaults.StatsdFlushInterval
 	}
 
-    cli := &Client{
+	cli := &Client{
 		HTTPClient:           http.DefaultClient,
 		GraphiteTranslateURL: graphite_u,
 		IRONdbFindTagsURL:    findtags_u,
@@ -97,10 +97,10 @@ func New(host, port, apiToken string, accountId int, debug, removeAggs, directIR
 		APIToken:             apiToken,
 		AccountId:            accountId,
 	}
-    if removeAggs {
-        cli.StatsdAggregations = aggs
-    }
-    return cli, nil
+	if removeAggs {
+		cli.StatsdAggregations = aggs
+	}
+	return cli, nil
 }
 
 // Translate translates a graphite query into a CAQL query
@@ -129,7 +129,7 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 	// check for statsd aggregations to replace, if found, replace them and add
 	// to the CAQL query the correct CAQL function
 	if len(c.StatsdAggregations) > 0 {
-        // capture the entire graphite:find because we want to replace it's contents later
+		// capture the entire graphite:find because we want to replace it's contents later
 		r := regexp.MustCompile(`(graphite:find\('[^']+'\))`)
 		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.HandleStatsdAggregations)
 	}
@@ -201,7 +201,7 @@ func (c *Client) ExecuteTranslation(b []byte) (*TranslateResponseBody, error) {
 
 func (c *Client) IRONdbFindTags(metricSearchPattern string) ([]gosnowth.FindTagsItem, error) {
 
-    c.IRONdbFindTagsURL.RawQuery = "query=and(__name:[graphite]" + metricSearchPattern + ")"
+	c.IRONdbFindTagsURL.RawQuery = "query=and(__name:[graphite]" + metricSearchPattern + ")"
 
 	req, err := http.NewRequest("GET", c.IRONdbFindTagsURL.String(), nil)
 	if err != nil {
@@ -212,9 +212,9 @@ func (c *Client) IRONdbFindTags(metricSearchPattern string) ([]gosnowth.FindTags
 	if c.APIToken != "" {
 		req.Header.Add("X-Circonus-Auth-Token", c.APIToken)
 		req.Header.Add("X-Circonus-App-Name", "Grafana Translator")
-        if( c.AccountId > 0 ) {
-		    req.Header.Add("X-Circonus-Account-Id", strconv.FormatInt(int64(c.AccountId), 10))
-        }
+		if c.AccountId > 0 {
+			req.Header.Add("X-Circonus-Account-Id", strconv.FormatInt(int64(c.AccountId), 10))
+		}
 	}
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
@@ -224,16 +224,16 @@ func (c *Client) IRONdbFindTags(metricSearchPattern string) ([]gosnowth.FindTags
 	if err != nil {
 		return nil, fmt.Errorf("error fetching find/tags: %v", err)
 	}
-    if resp.StatusCode != 200 {
-        return nil, fmt.Errorf("error find/tags returned code: %d",  resp.StatusCode)
-    }
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("error find/tags returned code: %d", resp.StatusCode)
+	}
 	defer resp.Body.Close()
 	// read the body from the response into []byte
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading find/tags response body: %v", err)
 	}
-    var findtagsResp []gosnowth.FindTagsItem
+	var findtagsResp []gosnowth.FindTagsItem
 	err = json.Unmarshal(respBody, &findtagsResp)
 	if err != nil {
 		// debug
@@ -248,35 +248,34 @@ func (c *Client) IRONdbFindTags(metricSearchPattern string) ([]gosnowth.FindTags
 	return findtagsResp, nil
 }
 
-
 // HandleStatsdAggregations will append the correct CAQL
 func (c *Client) HandleStatsdAggregations(s string) string {
 	r := regexp.MustCompile(`graphite:find\('([^']+)'\)`)
 	metricName := r.FindStringSubmatch(s)
-    // take metric name, and substitute $grafana variables into *
-    regGrafanaSquash := regexp.MustCompile(`\$[^.]+`)
-    metricSearchPattern := regGrafanaSquash.ReplaceAll([]byte(metricName[1]), []byte("*"))
+	// take metric name, and substitute $grafana variables into *
+	regGrafanaSquash := regexp.MustCompile(`\$[^.]+`)
+	metricSearchPattern := regGrafanaSquash.ReplaceAll([]byte(metricName[1]), []byte("*"))
 
-    // query /find/tags for the metric name pattern
-    findtagsResponseSlice, err := c.IRONdbFindTags( string(metricSearchPattern) )
-    if err != nil {
-        logger.Printf(logger.LvlError, err.Error())
-        return "" // TODO - return error
-    }
-    if 0 == len(findtagsResponseSlice) {
-        // if no results error out out and continue
-        logger.Printf(logger.LvlWarning, "Pattern %s has no metrics inside of Circonus IRONdb", metricSearchPattern)
-        // Keep going, this isn't fatal
-    } 
-    // else {
-        // TODO get the statsd_type from the tags
-        // TODO ensure it exists and to get the type(s)
-        // TODO - validate they are all the same type
-          // TODO - if not error out and continue
-    // }
+	// query /find/tags for the metric name pattern
+	findtagsResponseSlice, err := c.IRONdbFindTags(string(metricSearchPattern))
+	if err != nil {
+		logger.Printf(logger.LvlError, err.Error())
+		return "" // TODO - return error
+	}
+	if 0 == len(findtagsResponseSlice) {
+		// if no results error out out and continue
+		logger.Printf(logger.LvlWarning, "Pattern %s has no metrics inside of Circonus IRONdb", metricSearchPattern)
+		// Keep going, this isn't fatal
+	}
+	// else {
+	// TODO get the statsd_type from the tags
+	// TODO ensure it exists and to get the type(s)
+	// TODO - validate they are all the same type
+	// TODO - if not error out and continue
+	// }
 
-    // TODO if statsd counter don't remove the name, but do appendCAQL
-    // else do the stuff below
+	// TODO if statsd counter don't remove the name, but do appendCAQL
+	// else do the stuff below
 	splits := strings.Split(metricName[1], ".")
 	aggNode := splits[len(splits)-1]
 	if contains(c.StatsdAggregations, aggNode) {

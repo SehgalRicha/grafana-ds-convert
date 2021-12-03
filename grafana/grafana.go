@@ -96,7 +96,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 			// loop through panels and process them
 			err := g.ConvertPanels(board.Panels, circonusDatasource, graphiteDatasources)
 			if err != nil {
-                logger.Printf(logger.LvlError, "Dashboard %d: %s %v", board.ID, board.Title, err)
+				logger.Printf(logger.LvlError, "Dashboard %d: %s %v", board.ID, board.Title, err)
 			}
 		}
 		if g.Debug {
@@ -112,7 +112,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 		}
 		sm, err := g.Client.SetDashboard(context.Background(), newBoard, setDashParams)
 		if err != nil {
-            logger.Printf(logger.LvlError, "Dashboard: %s : %v", board.Title, err)
+			logger.Printf(logger.LvlError, "Dashboard: %s : %v", board.Title, err)
 		}
 		if g.Debug {
 			logger.PrintMarshal(logger.LvlDebug, "Create Dashboard Response:", sm)
@@ -124,7 +124,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 // ConvertPanels converts individual panels of a dashboard to use CAQL as data queries
 func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphiteDatasources []string) error {
 	for _, panel := range p {
-	    logger.Printf(logger.LvlInfo, "Converting Panel %d: %s", panel.ID, panel.Title)
+		logger.Printf(logger.LvlInfo, "Converting Panel %d: %s", panel.ID, panel.Title)
 		if panel.Datasource != nil {
 			if len(graphiteDatasources) > 0 && !contains(graphiteDatasources, *panel.Datasource) {
 				continue
