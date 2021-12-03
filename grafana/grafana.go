@@ -154,7 +154,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				} else {
 					newTargetStr, err := g.CirconusClient.Translate(target.Target)
 					if err != nil {
-						logger.Printf(logger.LvlError, "Panel: %s Target: %s %v", err, panel.Title, target.Target, err)
+						logger.Printf(logger.LvlError, "Panel: %s Target: %s %v", panel.Title, target.Target, err)
 					}
 					target.Query = newTargetStr
 					target.Target = ""
