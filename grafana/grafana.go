@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/bdunavant/sdk"
 	"github.com/circonus/grafana-ds-convert/circonus"
-	"github.com/circonus/grafana-ds-convert/debug"
+	"github.com/circonus/grafana-ds-convert/logger"
 )
 
 //Grafana is a struct that holds the sdk client and other properties
@@ -34,7 +33,7 @@ func New(url, apikey string, debug, noAlerts bool, c *circonus.Client) Grafana {
 func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, graphiteDatasources []string) error {
 
 	if g.Debug {
-		log.Printf("Translation URL: %s", g.CirconusClient.URL.String())
+		logger.Printf(logger.LvlDebug, "Translation URL: %s", g.CirconusClient.URL.String())
 	}
 
 	// get grafana source and destination folders
@@ -42,7 +41,7 @@ func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, 
 	var dstFolder sdk.FoundBoard
 	foundFolders, err := g.Client.Search(context.Background(), sdk.SearchType(sdk.SearchTypeFolder))
 	if err != nil {
-		return fmt.Errorf("error fetching grafana dashboard folders: %v", err)
+		return fmt.Errorf("error fetching grafana dashboard folders: %w", err)
 	}
 	for _, folder := range foundFolders {
 		if folder.Title == sourceFolder {
@@ -59,8 +58,8 @@ func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, 
 	}
 	// debug
 	if g.Debug {
-		debug.PrintMarshal("Found source folder:", srcFolder)
-		debug.PrintMarshal("Found destination folder:", destFolder)
+		logger.PrintMarshal(logger.LvlDebug, "Found source folder:", srcFolder)
+		logger.PrintMarshal(logger.LvlDebug, "Found destination folder:", destFolder)
 	}
 
 	// get dashboards within found folder
@@ -70,7 +69,7 @@ func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, 
 	}
 	// debug
 	if g.Debug {
-		debug.PrintMarshal("Dashboards from Folder:", foundBoards)
+		logger.PrintMarshal(logger.LvlDebug, "Dashboards from Folder:", foundBoards)
 	}
 
 	// loop through dashboards in the found folder and create an array of them as well as dashboard properties
@@ -90,7 +89,7 @@ func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, 
 	if err != nil {
 		return err
 	}
-	log.Println("successfully converted dashboards, exiting.")
+	logger.Printf(logger.LvlInfo, "Successfully converted dashboards, exiting.")
 	return nil
 }
 
@@ -100,17 +99,17 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 	// loop through dashboards and their panels, translating "targetFull" or "target"
 	for _, board := range boards {
 		if g.Debug {
-			debug.Print("Converting Dashboard:", board.Title)
+			logger.Printf(logger.LvlDebug, "Converting Dashboard:", board.Title)
 		}
 		if len(board.Panels) >= 1 {
 			// loop through panels and process them
 			err := g.ConvertPanels(board.Panels, circonusDatasource, graphiteDatasources)
 			if err != nil {
-				log.Println(fmt.Errorf("error:\n Dashboard: %s\n %v", board.Title, err))
+				logger.Printf(logger.LvlError, "Dashboard: %s %v", board.Title, err)
 			}
 		}
 		if g.Debug {
-			debug.PrintMarshal("Converted Dashboard: ", board)
+			logger.PrintMarshal(logger.LvlDebug, "Converted Dashboard: ", board)
 		}
 		newBoard := board
 		newBoard.ID = 0
@@ -122,10 +121,10 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 		}
 		sm, err := g.Client.SetDashboard(context.Background(), newBoard, setDashParams)
 		if err != nil {
-			log.Println(fmt.Errorf("error:\n Dashboard: %s\n %v", board.Title, err))
+            logger.Printf(logger.LvlError, "Dashboard: %s : %v", board.Title, err)
 		}
 		if g.Debug {
-			debug.PrintMarshal("Create Dashboard Response:", sm)
+			logger.PrintMarshal(logger.LvlDebug, "Create Dashboard Response:", sm)
 		}
 	}
 	return nil
@@ -135,7 +134,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphiteDatasources []string) error {
 	for _, panel := range p {
 		if g.Debug {
-			debug.Print("Converting Panel: ", panel.Title)
+			logger.Printf(logger.LvlDebug, "Converting Panel: ", panel.Title)
 		}
 		if panel.Datasource != nil {
 			if len(graphiteDatasources) > 0 && !contains(graphiteDatasources, *panel.Datasource) {
@@ -156,7 +155,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				if target.TargetFull != "" {
 					newTargetStr, err := g.CirconusClient.Translate(target.TargetFull)
 					if err != nil {
-						log.Print(fmt.Errorf("%v:\n  Panel: %s\n  Target: %s", err, panel.Title, target.TargetFull))
+						logger.Printf(logger.LvlError, "%v:  Panel: %s Target: %s", err, panel.Title, target.TargetFull)
 					}
 					target.Query = newTargetStr
 					target.Target = ""
@@ -166,7 +165,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				} else {
 					newTargetStr, err := g.CirconusClient.Translate(target.Target)
 					if err != nil {
-						log.Print(fmt.Errorf("%v:\n  Panel: %s\n  Target: %s", err, panel.Title, target.Target))
+						logger.Printf(logger.LvlError, "%v: Panel: %s Target: %s", err, panel.Title, target.Target)
 					}
 					target.Query = newTargetStr
 					target.Target = ""
