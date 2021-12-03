@@ -267,12 +267,13 @@ func (c *Client) HandleStatsdAggregations(s string) string {
         // if no results error out out and continue
         logger.Printf(logger.LvlWarning, "Pattern %s has no metrics inside of Circonus IRONdb", metricSearchPattern)
         // Keep going, this isn't fatal
-    } else {
+    } 
+    // else {
         // TODO get the statsd_type from the tags
         // TODO ensure it exists and to get the type(s)
         // TODO - validate they are all the same type
           // TODO - if not error out and continue
-    }
+    // }
 
     // TODO if statsd counter don't remove the name, but do appendCAQL
     // else do the stuff below
