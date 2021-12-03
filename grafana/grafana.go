@@ -31,11 +31,6 @@ func New(url, apikey string, debug, noAlerts bool, c *circonus.Client) Grafana {
 
 // Translate is the main function which performs dashboard translations
 func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, graphiteDatasources []string) error {
-
-	if g.Debug {
-		logger.Printf(logger.LvlDebug, "Translation URL: %s", g.CirconusClient.URL.String())
-	}
-
 	// get grafana source and destination folders
 	var srcFolder sdk.FoundBoard
 	var dstFolder sdk.FoundBoard
@@ -74,14 +69,12 @@ func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, 
 
 	// loop through dashboards in the found folder and create an array of them as well as dashboard properties
 	var boards []sdk.Board
-	// var boardProps []sdk.BoardProperties
 	for _, b := range foundBoards {
 		brd, _, err := g.Client.GetDashboardByUID(context.Background(), b.UID)
 		if err != nil {
 			return fmt.Errorf("error fetching dashboard by UID: %v", err)
 		}
 		boards = append(boards, brd)
-		// boardProps = append(boardProps, brdProp)
 	}
 
 	// start the dashboard conversion
@@ -98,14 +91,12 @@ func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, 
 func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string, destinationFolder sdk.FoundBoard, graphiteDatasources []string) error {
 	// loop through dashboards and their panels, translating "targetFull" or "target"
 	for _, board := range boards {
-		if g.Debug {
-			logger.Printf(logger.LvlDebug, "Converting Dashboard:", board.Title)
-		}
+		logger.Printf(logger.LvlInfo, "Converting Dashboard %d: %s", board.ID, board.Title)
 		if len(board.Panels) >= 1 {
 			// loop through panels and process them
 			err := g.ConvertPanels(board.Panels, circonusDatasource, graphiteDatasources)
 			if err != nil {
-				logger.Printf(logger.LvlError, "Dashboard: %s %v", board.Title, err)
+				logger.Printf(logger.LvlError, "Dashboard %d: %s %v", board.ID, board.Title, err)
 			}
 		}
 		if g.Debug {
@@ -121,7 +112,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 		}
 		sm, err := g.Client.SetDashboard(context.Background(), newBoard, setDashParams)
 		if err != nil {
-            logger.Printf(logger.LvlError, "Dashboard: %s : %v", board.Title, err)
+			logger.Printf(logger.LvlError, "Dashboard: %s : %v", board.Title, err)
 		}
 		if g.Debug {
 			logger.PrintMarshal(logger.LvlDebug, "Create Dashboard Response:", sm)
@@ -133,9 +124,7 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 // ConvertPanels converts individual panels of a dashboard to use CAQL as data queries
 func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphiteDatasources []string) error {
 	for _, panel := range p {
-		if g.Debug {
-			logger.Printf(logger.LvlDebug, "Converting Panel: ", panel.Title)
-		}
+		logger.Printf(logger.LvlInfo, "Converting Panel %d: %s", panel.ID, panel.Title)
 		if panel.Datasource != nil {
 			if len(graphiteDatasources) > 0 && !contains(graphiteDatasources, *panel.Datasource) {
 				continue
@@ -155,7 +144,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				if target.TargetFull != "" {
 					newTargetStr, err := g.CirconusClient.Translate(target.TargetFull)
 					if err != nil {
-						logger.Printf(logger.LvlError, "%v:  Panel: %s Target: %s", err, panel.Title, target.TargetFull)
+						logger.Printf(logger.LvlError, "Panel: %s Target: %s %v", panel.Title, target.TargetFull, err)
 					}
 					target.Query = newTargetStr
 					target.Target = ""
@@ -165,7 +154,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				} else {
 					newTargetStr, err := g.CirconusClient.Translate(target.Target)
 					if err != nil {
-						logger.Printf(logger.LvlError, "%v: Panel: %s Target: %s", err, panel.Title, target.Target)
+						logger.Printf(logger.LvlError, "Panel: %s Target: %s %v", panel.Title, target.Target, err)
 					}
 					target.Query = newTargetStr
 					target.Target = ""
