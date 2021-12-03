@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/circonus/grafana-ds-convert/debug"
+	"github.com/circonus/grafana-ds-convert/logger"
 	"github.com/circonus/grafana-ds-convert/internal/config/defaults"
 )
 
@@ -108,7 +108,7 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 	}
 	// debug
 	if c.Debug {
-		debug.PrintJSONBytes("Translate Request Body:", reqBody)
+		logger.PrintJSONBytes(logger.LvlDebug, "Translate Request Body:", reqBody)
 	}
 
 	// execute the translation HTTP query
@@ -164,27 +164,27 @@ func (c *Client) ExecuteTranslation(b []byte) (*TranslateResponseBody, error) {
 	if err != nil {
 		// debug
 		if c.Debug {
-			debug.PrintMarshal("Translate Response Body:", translateResp)
+			logger.PrintMarshal(logger.LvlDebug, "Translate Response Body:", translateResp)
 		}
 		return nil, fmt.Errorf("error unmarshaling translation response: %v", err)
 	}
 	if translateResp.CAQL == "" {
 		// debug
 		if c.Debug {
-			debug.PrintMarshal("Translate Response Body:", translateResp)
+			logger.PrintMarshal(logger.LvlDebug, "Translate Response Body:", translateResp)
 		}
 		return nil, fmt.Errorf("error translating graphite query: null CAQL string")
 	}
 	if translateResp.Error != "" {
 		// debug
 		if c.Debug {
-			debug.PrintMarshal("Translate Response Body:", translateResp)
+			logger.PrintMarshal(logger.LvlDebug, "Translate Response Body:", translateResp)
 		}
 		return nil, fmt.Errorf("error translating graphite query: %s", translateResp.Error)
 	}
 	// debug
 	if c.Debug {
-		debug.PrintMarshal("Translate Response Body:", translateResp)
+		logger.PrintMarshal(logger.LvlDebug, "Translate Response Body:", translateResp)
 	}
 	return &translateResp, nil
 }
