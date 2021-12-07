@@ -262,26 +262,50 @@ func (c *Client) HandleStatsdAggregations(s string) string {
 		logger.Printf(logger.LvlError, err.Error())
 		return "" // TODO - return error
 	}
+	statsdType := ""
 	if 0 == len(findtagsResponseSlice) {
 		// if no results error out out and continue
 		logger.Printf(logger.LvlWarning, "Pattern %s has no metrics inside of Circonus IRONdb", metricSearchPattern)
 		// Keep going, this isn't fatal
+	} else {
+		for _, findTagsMetric := range findtagsResponseSlice {
+			buf := bytes.NewBufferString(findTagsMetric.MetricName)
+			p := gosnowth.NewMetricParser(buf)
+			aMetric, err := p.Parse()
+			if err != nil {
+				// This shouldn't be possible.  IRONdb gave us back something we cannot parse?
+				logger.Printf(logger.LvlError, "Unable to parse findTagsMetric value from IRONdb?! %v", err)
+				continue
+			}
+			// get the statsd_type from the tags
+			for _, tag := range aMetric.StreamTags {
+				if tag.Category == "statsd_type" {
+					if statsdType == "" {
+						statsdType = tag.Value
+					} else if statsdType != tag.Value {
+						// we have non-matching types, and cannot make a determination.
+						logger.Printf(logger.LvlWarning, "Pattern %s matches more than one statsd_type value.  Cannot assume a type.", metricSearchPattern)
+						statsdType = "UNKNOWN"
+						break // no point in continuing
+					}
+				}
+			}
+		}
 	}
-	// else {
-	// TODO get the statsd_type from the tags
-	// TODO ensure it exists and to get the type(s)
-	// TODO - validate they are all the same type
-	// TODO - if not error out and continue
-	// }
 
-	// TODO if statsd counter don't remove the name, but do appendCAQL
-	// else do the stuff below
 	splits := strings.Split(metricName[1], ".")
 	aggNode := splits[len(splits)-1]
 	if contains(c.StatsdAggregations, aggNode) {
 		appendCAQL := getAppendCAQL(aggNode)
-		splits = splits[:len(splits)-1]
-		return fmt.Sprintf("graphite:find:histogram('%s') | %s", strings.Join(splits, "."), appendCAQL)
+		newName := ""
+		if statsdType == "count" {
+			newName = metricName[1]
+			logger.Printf(logger.LvlInfo, "%s identified as a statsd_type count.  Keeping raw name.", newName)
+		} else {
+			splits = splits[:len(splits)-1]
+			newName = strings.Join(splits, ".")
+		}
+		return fmt.Sprintf("graphite:find:histogram('%s') | %s", newName, appendCAQL)
 	}
 	return s
 }
