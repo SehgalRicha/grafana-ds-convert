@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/circonus/grafana-ds-convert/circonus"
 	"github.com/circonus/grafana-ds-convert/grafana"
 	"github.com/circonus/grafana-ds-convert/internal/config"
 	"github.com/circonus/grafana-ds-convert/internal/config/keys"
+	"github.com/circonus/grafana-ds-convert/logger"
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -19,6 +21,7 @@ import (
 //go:embed version.txt
 var version string
 var cfgFile string
+var localInputFile string
 
 var rootCmd = &cobra.Command{
 	Use:   "grafana-ds-convert",
@@ -28,13 +31,21 @@ like dashboards and alerts from different supported query languages
 to Circonus Analytics Query Language (CAQL).`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		// print version and exit
 		if viper.GetBool("version") {
 			fmt.Println(version)
 			return
 		}
 
-		// show configuration and exit
+		var queryStrings []string
+		if localInputFile != "" {
+			queryBytes, err := os.ReadFile(localInputFile)
+			if err != nil {
+				log.Fatalf("Unable to read from file %s: %v", localInputFile, err)
+				return
+			}
+			queryStrings = strings.Split(string(queryBytes), "\n")
+		}
+
 		if viper.GetString(keys.ShowConfig) != "" {
 			if err := config.ShowConfig(os.Stdout); err != nil {
 				log.Fatalf("error printing config: %v", err)
@@ -45,22 +56,6 @@ to Circonus Analytics Query Language (CAQL).`,
 		// Validate that the required config items are set
 		if err := config.Validate(); err != nil {
 			log.Fatalf("error validating config: %v", err)
-		}
-
-		// Create Grafana API URL
-		var url string
-		if viper.GetBool(keys.GrafanaTLS) {
-			if viper.GetString(keys.GrafanaPort) != "" {
-				url = fmt.Sprintf("https://%s:%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPort), viper.GetString(keys.GrafanaPath))
-			} else {
-				url = fmt.Sprintf("https://%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPath))
-			}
-		} else {
-			if viper.GetString(keys.GrafanaPort) != "" {
-				url = fmt.Sprintf("http://%s:%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPort), viper.GetString(keys.GrafanaPath))
-			} else {
-				url = fmt.Sprintf("http://%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPath))
-			}
 		}
 
 		// create circonus interface
@@ -77,6 +72,38 @@ to Circonus Analytics Query Language (CAQL).`,
 		)
 		if err != nil {
 			log.Fatalf("error connecting to circonus: %v", err)
+		}
+
+		if len(queryStrings) > 0 {
+			for _, aGraphiteQuery := range queryStrings {
+				q := strings.TrimSpace(aGraphiteQuery)
+				if len(q) == 0 {
+					continue
+				}
+				output, err := circ.Translate(q)
+				if err != nil {
+					logger.Printf(logger.LvlError, "error translating from file: %v", err)
+					continue
+				}
+				fmt.Println(output)
+			}
+			return
+		}
+
+		// Create Grafana API URL
+		var url string
+		if viper.GetBool(keys.GrafanaTLS) {
+			if viper.GetString(keys.GrafanaPort) != "" {
+				url = fmt.Sprintf("https://%s:%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPort), viper.GetString(keys.GrafanaPath))
+			} else {
+				url = fmt.Sprintf("https://%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPath))
+			}
+		} else {
+			if viper.GetString(keys.GrafanaPort) != "" {
+				url = fmt.Sprintf("http://%s:%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPort), viper.GetString(keys.GrafanaPath))
+			} else {
+				url = fmt.Sprintf("http://%s%s", viper.GetString(keys.GrafanaHost), viper.GetString(keys.GrafanaPath))
+			}
 		}
 
 		// create grafana API interface
@@ -103,49 +130,23 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file (default: $HOME/.grafana-ds-convert.yaml|.json|.toml)")
+	rootCmd.Flags().StringVarP(&localInputFile, "file", "f", "", "Take graphite queries from a local file to translate.  One query per line.  Will output translations to STDOUT.")
 
-	//
-	// arguments that do not appear in configuration file
-	//
+	rootCmd.PersistentFlags().String(keys.ShowConfig, "", "show config (json|toml|yaml) and exit")
+	if err := viper.BindPFlag(keys.ShowConfig, rootCmd.PersistentFlags().Lookup("show-config")); err != nil {
+		logger.Printf(logger.LvlError, "Error binding show-config %v", err)
+	}
 
-	{
-		var (
-			longOpt     = "config"
-			shortOpt    = "c"
-			description = "config file (default: $HOME/.grafana-ds-convert.yaml|.json|.toml)"
-		)
-		rootCmd.Flags().StringVarP(&cfgFile, longOpt, shortOpt, "", description)
-	}
-	{
-		const (
-			key         = keys.ShowConfig
-			longOpt     = "show-config"
-			description = "show config (json|toml|yaml) and exit"
-		)
-		rootCmd.PersistentFlags().String(key, "", description)
-		if err := viper.BindPFlag(key, rootCmd.PersistentFlags().Lookup(longOpt)); err != nil {
-			log.Fatalf("error showing config: %v", err)
-		}
-	}
-	{
-		const (
-			key          = keys.ShowVersion
-			longOpt      = "version"
-			shortOpt     = "v"
-			defaultValue = false
-			description  = "show version and exit"
-		)
-		rootCmd.Flags().BoolP(longOpt, shortOpt, defaultValue, description)
-		if err := viper.BindPFlag(key, rootCmd.Flags().Lookup(longOpt)); err != nil {
-			log.Fatalf("error printing version: %v", err)
-		}
+	rootCmd.Flags().BoolP("version", "v", false, "show version and exit")
+	if err := viper.BindPFlag(keys.ShowVersion, rootCmd.Flags().Lookup("version")); err != nil {
+		logger.Printf(logger.LvlError, "Error binding show-config %v", err)
 	}
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile != "" {
-		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
 		// Find home directory.
@@ -158,9 +159,7 @@ func initConfig() {
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		logger.Printf(logger.LvlError, "Error reading config: %v", err)
 	}
 }

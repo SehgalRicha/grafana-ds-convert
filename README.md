@@ -4,10 +4,7 @@
 
 grafana-ds-convert allows Grafana users to convert assets like dashboards and alerts from different supported query languages to Circonus Analytics Query Language (CAQL).
 
-## Features
-
-1. TOML, YAML, and JSON config file support
-1. Translate Graphite queries for dashboard panels into CAQL queries
+Normal usage is to query against a Grafana instance for all dashboards in the config-specified folder, and translate all of the panel's query targets from Graphite, into an CAQL equivalent (via use of Circonus APIs).  Alternatively, a local file (one graphite query per line) can be used as input.
 
 ## Configuration Options
 
@@ -17,12 +14,15 @@ Usage:
 
 Flags:
   -c, --config string        config file (default: $HOME/.grafana-ds-convert.yaml|.json|.toml)
+  -f, --file string          Take graphite queries from a local file to translate.  One query per line.  Will output translations to STDOUT.
   -h, --help                 help for grafana-ds-convert
       --show-config string   show config (json|toml|yaml) and exit
   -v, --version              show version and exit
   ```
 
 ## Example TOML Configuration File
+Config files may be in TOML, YAML, or JSON
+
 ```toml
 # Global settings
 debug = false
