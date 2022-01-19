@@ -62,3 +62,5 @@ debug = false
   # the below setting nulls out alerts on panels
   no_alerts = false
 ```
+## A note about the General folder
+The General folder (id=0) is special and is not part of the Folder API which means that you will need to move any dashboards within the General folder to another before conversion.
