@@ -39,10 +39,11 @@ type Client struct {
 	StatsdFlushInterval  int
 	APIToken             string
 	AccountId            int
+	RatePeriod           int
 }
 
 // New creates a new Circonus Client
-func New(host, port, apiToken string, accountId int, debug, removeAggs, directIRONdb bool, aggs []string, flush int) (*Client, error) {
+func New(host, port, apiToken string, accountId int, debug, removeAggs, directIRONdb bool, aggs []string, flush int, rate_period int) (*Client, error) {
 
 	// set up either direct IRONdb or (default) Circonus API URL
 	var graphite_u *url.URL
@@ -96,6 +97,7 @@ func New(host, port, apiToken string, accountId int, debug, removeAggs, directIR
 		StatsdFlushInterval:  flush,
 		APIToken:             apiToken,
 		AccountId:            accountId,
+		RatePeriod:           rate_period,
 	}
 	if removeAggs {
 		cli.StatsdAggregations = aggs
@@ -296,7 +298,7 @@ func (c *Client) HandleStatsdAggregations(s string) string {
 	splits := strings.Split(metricName[1], ".")
 	aggNode := splits[len(splits)-1]
 	if contains(c.StatsdAggregations, aggNode) {
-		appendCAQL := getAppendCAQL(aggNode)
+		appendCAQL := getAppendCAQL(aggNode, c.RatePeriod)
 		newName := ""
 		if statsdType == "count" {
 			newName = metricName[1]
@@ -319,12 +321,17 @@ func contains(s []string, t string) bool {
 	return false
 }
 
-func getAppendCAQL(statsdAgg string) string {
+func getAppendCAQL(statsdAgg string, rate_period int) string {
 	switch statsdAgg {
 	case "sum":
 		return "histogram:sum()"
 	case "count":
-		return "histogram:count()"
+		// graphite counts are normalized over the period, meaning they are actually more of a rate, so this is a better translation
+		if rate_period > 0 {
+			return fmt.Sprintf("histogram:rate(period=%d)", rate_period)
+		} else {
+			return "histogram:rate()"
+		}
 	case "mean":
 		return "histogram:mean()"
 	case "lower":

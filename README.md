@@ -41,7 +41,9 @@ debug = false
   # aggregations, and which ones to act on
   [circonus.statsd_aggregations]
     remove = true
-    agg_list = ["mean","sum","count_ps"]
+    agg_list = ["mean","sum","count_ps","count"]
+    # Optional rate period override for histogram:rate() to set period=N. 
+    # rate_period = 10
 
 # Grafana section defines parameters for connecting to Grafana and 
 # managing assets within Grafana
