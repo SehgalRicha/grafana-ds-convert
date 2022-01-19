@@ -262,7 +262,8 @@ func (c *Client) HandleStatsdAggregations(s string) string {
 	findtagsResponseSlice, err := c.IRONdbFindTags(string(metricSearchPattern))
 	if err != nil {
 		logger.Printf(logger.LvlError, err.Error())
-		return "" // TODO - return error
+		logger.Printf(logger.LvlWarning, "Above error means we cannot validate '%s' which we will maintain as a best-effort try.", s)
+		return s
 	}
 	statsdType := ""
 	if 0 == len(findtagsResponseSlice) {
