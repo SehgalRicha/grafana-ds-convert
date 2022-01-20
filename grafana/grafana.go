@@ -72,7 +72,8 @@ func (g Grafana) Translate(sourceFolder, destFolder, circonusDatasource string, 
 	for _, b := range foundBoards {
 		brd, _, err := g.Client.GetDashboardByUID(context.Background(), b.UID)
 		if err != nil {
-			return fmt.Errorf("error fetching dashboard by UID: %v", err)
+			logger.Printf(logger.LvlError, "Dashboard %s skipped because it cannot be fetched or parsed. %v", b.UID, err)
+			continue
 		}
 		boards = append(boards, brd)
 	}
