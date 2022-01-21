@@ -95,10 +95,20 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 		logger.Printf(logger.LvlInfo, "Converting Dashboard %d: %s", board.ID, board.Title)
 		if len(board.Panels) >= 1 {
 			// loop through panels and process them
+			logger.Printf(logger.LvlInfo, "briand1")
 			err := g.ConvertPanels(board.Panels, circonusDatasource, graphiteDatasources)
 			if err != nil {
 				logger.Printf(logger.LvlError, "Dashboard %d: %s %v", board.ID, board.Title, err)
 			}
+		} else {
+			if g.Debug {
+				logger.Printf(logger.LvlDebug, "No panels")
+			}
+		}
+		// We are running in local mode so just print the output
+		if destinationFolder.Title == "" {
+			logger.PrintMarshal(logger.LvlInfo, "Converted Dashboard: ", board)
+			return nil
 		}
 		if g.Debug {
 			logger.PrintMarshal(logger.LvlDebug, "Converted Dashboard: ", board)
@@ -128,6 +138,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 		logger.Printf(logger.LvlInfo, "Converting Panel %d: %s", panel.ID, panel.Title)
 		if panel.Datasource != nil {
 			if len(graphiteDatasources) > 0 && !contains(graphiteDatasources, *panel.Datasource) {
+				logger.Printf(logger.LvlInfo, "Skipping panel due to datasource type.")
 				continue
 			}
 		}
@@ -161,6 +172,10 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 					target.Target = ""
 					panel.SetTarget(&target)
 				}
+			}
+		} else {
+			if g.Debug {
+				logger.Printf(logger.LvlInfo, "No targets")
 			}
 		}
 	}
