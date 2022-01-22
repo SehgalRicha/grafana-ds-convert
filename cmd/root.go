@@ -159,7 +159,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file (default: $HOME/.grafana-ds-convert.yaml|.json|.toml)")
-	rootCmd.Flags().StringVarP(&localInputFile, "file", "f", "", "Take graphite queries from a local file to translate.  One query per line.  Will output translations to STDOUT.")
+	rootCmd.Flags().StringVarP(&localInputFile, "file", "f", "", "Take a local file to translate.")
 
 	rootCmd.PersistentFlags().String(keys.ShowConfig, "", "show config (json|toml|yaml) and exit")
 	if err := viper.BindPFlag(keys.ShowConfig, rootCmd.PersistentFlags().Lookup("show-config")); err != nil {

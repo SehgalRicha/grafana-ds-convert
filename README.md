@@ -14,10 +14,12 @@ Usage:
 
 Flags:
   -c, --config string        config file (default: $HOME/.grafana-ds-convert.yaml|.json|.toml)
-  -f, --file string          Take graphite queries from a local file to translate.  One query per line.  Will output translations to STDOUT.
+  -f, --file string          Take a local file to translate.
   -h, --help                 help for grafana-ds-convert
       --show-config string   show config (json|toml|yaml) and exit
   -v, --version              show version and exit
+
+For -f, If it's a .json file, assume it's a Grafana dashboard, otherwise graphite queries; one query per line.  Will output translations to STDOUT.
   ```
 
 ## Example TOML Configuration File
