@@ -99,6 +99,41 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 			if err != nil {
 				logger.Printf(logger.LvlError, "Dashboard %d: %s %v", board.ID, board.Title, err)
 			}
+		} else {
+			if g.Debug {
+				logger.Printf(logger.LvlDebug, "No top level panels.")
+			}
+		}
+		// Dashboards can also have "rows" and those rows can have their own panels, so look for those as well
+		if len(board.Rows) >= 1 {
+			foundOne := false
+			for _, row := range board.Rows {
+				if len(row.Panels) >= 1 {
+					foundOne = true
+					// board is []*Panel, vs Row is []Panel, so convert it into a slice of *'s so we can pass it in
+					var slicearoo []*sdk.Panel
+					for _, p := range row.Panels {
+						slicearoo = append(slicearoo, &p)
+					}
+					err := g.ConvertPanels(slicearoo, circonusDatasource, graphiteDatasources)
+					if err != nil {
+						logger.Printf(logger.LvlError, "Dashboard %d: %s error in row panel %v", board.ID, board.Title, err)
+					}
+				}
+			}
+			if g.Debug && !foundOne {
+				logger.Printf(logger.LvlDebug, "No panels in rows.")
+			}
+		} else {
+			if g.Debug {
+				logger.Printf(logger.LvlDebug, "No top level rows.")
+			}
+		}
+
+		// We are running in local mode so just print the output
+		if destinationFolder.Title == "" {
+			logger.PrintMarshal(logger.LvlInfo, "Converted Dashboard: ", board)
+			return nil
 		}
 		if g.Debug {
 			logger.PrintMarshal(logger.LvlDebug, "Converted Dashboard: ", board)
@@ -128,6 +163,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 		logger.Printf(logger.LvlInfo, "Converting Panel %d: %s", panel.ID, panel.Title)
 		if panel.Datasource != nil {
 			if len(graphiteDatasources) > 0 && !contains(graphiteDatasources, *panel.Datasource) {
+				logger.Printf(logger.LvlInfo, "Skipping panel due to datasource type.")
 				continue
 			}
 		}
@@ -161,6 +197,10 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 					target.Target = ""
 					panel.SetTarget(&target)
 				}
+			}
+		} else {
+			if g.Debug {
+				logger.Printf(logger.LvlInfo, "No targets")
 			}
 		}
 	}

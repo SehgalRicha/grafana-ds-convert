@@ -2,11 +2,13 @@ package cmd
 
 import (
 	_ "embed" //embedding the version file
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 
+	"github.com/bdunavant/sdk"
 	"github.com/circonus/grafana-ds-convert/circonus"
 	"github.com/circonus/grafana-ds-convert/grafana"
 	"github.com/circonus/grafana-ds-convert/internal/config"
@@ -37,13 +39,28 @@ to Circonus Analytics Query Language (CAQL).`,
 		}
 
 		var queryStrings []string
+		var localDashboard *sdk.Board
 		if localInputFile != "" {
-			queryBytes, err := os.ReadFile(localInputFile)
-			if err != nil {
-				log.Fatalf("Unable to read from file %s: %v", localInputFile, err)
-				return
+			if strings.HasSuffix(localInputFile, ".json") {
+				// This is a dashboard .json
+				boardBytes, err := os.ReadFile(localInputFile)
+				if err != nil {
+					log.Fatalf("Unable to read from file %s: %v", localInputFile, err)
+					return
+				}
+				err = json.Unmarshal(boardBytes, &localDashboard)
+				if err != nil {
+					log.Fatalf("Unable to unmarshal dashboard from file %s: %v", localInputFile, err)
+				}
+				// log.Fatalf("%#v", localDashboard)
+			} else {
+				queryBytes, err := os.ReadFile(localInputFile)
+				if err != nil {
+					log.Fatalf("Unable to read from file %s: %v", localInputFile, err)
+					return
+				}
+				queryStrings = strings.Split(string(queryBytes), "\n")
 			}
-			queryStrings = strings.Split(string(queryBytes), "\n")
 		}
 
 		if viper.GetString(keys.ShowConfig) != "" {
@@ -110,15 +127,25 @@ to Circonus Analytics Query Language (CAQL).`,
 		// create grafana API interface
 		gclient := grafana.New(url, viper.GetString(keys.GrafanaAPIToken), viper.GetBool(keys.Debug), viper.GetBool(keys.GrafanaNoAlerts), circ)
 
-		// execute the translation
-		err = gclient.Translate(
-			viper.GetString(keys.GrafanaSourceFolder),
-			viper.GetString(keys.GrafanaDestFolder),
-			viper.GetString(keys.GrafanaCirconusDatasource),
-			viper.GetStringSlice(keys.GrafanaGraphiteDatasources),
-		)
-		if err != nil {
-			log.Fatalf("error translating dashboards: %v", err)
+		if localDashboard != nil {
+			// translate a single dashboard from file
+			boards := []sdk.Board{*localDashboard}
+			var emptyDstFolder sdk.FoundBoard
+			err = gclient.ConvertDashboards(boards, viper.GetString(keys.GrafanaCirconusDatasource), emptyDstFolder, viper.GetStringSlice(keys.GrafanaGraphiteDatasources))
+			if err != nil {
+				log.Fatalf("error translating local dashboard: %v", err)
+			}
+		} else {
+			// execute the translation
+			err = gclient.Translate(
+				viper.GetString(keys.GrafanaSourceFolder),
+				viper.GetString(keys.GrafanaDestFolder),
+				viper.GetString(keys.GrafanaCirconusDatasource),
+				viper.GetStringSlice(keys.GrafanaGraphiteDatasources),
+			)
+			if err != nil {
+				log.Fatalf("error translating dashboards: %v", err)
+			}
 		}
 
 	},
