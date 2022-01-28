@@ -11,27 +11,7 @@
 					"type": "dashboard"
 				},
 				{
-					"datasource": "Redfin Prod Graphite",
-					"enable": false,
-					"iconColor": "#C0C6BE",
-					"iconSize": 13,
-					"lineColor": "rgba(255, 96, 96, 0.592157)",
-					"name": "Bouncer",
-					"showLine": true,
-					"target": "prod.events.bouncer.*"
-				},
-				{
-					"datasource": "Redfin Prod Graphite",
-					"enable": false,
-					"iconColor": "#C0C6BE",
-					"iconSize": 13,
-					"lineColor": "rgba(136, 96, 255, 0.59)",
-					"name": "Deployment",
-					"showLine": true,
-					"target": "prod.events.deployment"
-				},
-				{
-					"datasource": "Redfin Prod Graphite",
+					"datasource": " Prod Graphite",
 					"enable": false,
 					"iconColor": "#C0C6BE",
 					"iconSize": 13,
@@ -95,11 +75,11 @@
 						"targets": [
 							{
 								"refId": "A",
-								"target": "aliasByNode(prod.nagios.corvair.500-errors.*, 4)"
+								"target": "aliasByNode(prod.nagios.500-errors.*, 4)"
 							},
 							{
 								"refId": "B",
-								"target": "alias(prod.node.corvair.cluster.stats.worker.process.uptime.overall.mean, 'Worker Uptime')"
+								"target": "alias(prod.node.cluster.stats.worker.process.uptime.overall.mean, 'Worker Uptime')"
 							}
 						],
 						"thresholds": [],
