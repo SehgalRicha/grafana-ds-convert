@@ -329,7 +329,7 @@ func getAppendCAQL(statsdAgg string, rate_period int) string {
 	case "count":
 		// graphite counts are normalized over the period, meaning they are actually more of a rate, so this is a better translation
 		if rate_period > 0 {
-			return fmt.Sprintf("histogram:rate(period=%d)", rate_period)
+			return fmt.Sprintf("histogram:rate(period=%ds)", rate_period)
 		} else {
 			return "histogram:rate()"
 		}
@@ -340,7 +340,7 @@ func getAppendCAQL(statsdAgg string, rate_period int) string {
 	case "upper":
 		return "histogram:max()"
 	case "count_ps":
-		return "histogram:rate(period=1)"
+		return "histogram:rate(period=1s)"
 	case "std":
 		return "histogram:stddev()"
 	}
