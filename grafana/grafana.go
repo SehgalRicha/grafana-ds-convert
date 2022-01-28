@@ -94,7 +94,6 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 	for _, board := range boards {
 		logger.Printf(logger.LvlInfo, "Converting Dashboard %d: %s", board.ID, board.Title)
 		if len(board.Panels) >= 1 {
-			// loop through panels and process them
 			err := g.ConvertPanels(board.Panels, circonusDatasource, graphiteDatasources)
 			if err != nil {
 				logger.Printf(logger.LvlError, "Dashboard %d: %s %v", board.ID, board.Title, err)
@@ -113,7 +112,8 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 					// board is []*Panel, vs Row is []Panel, so convert it into a slice of *'s so we can pass it in
 					var slicearoo []*sdk.Panel
 					for _, p := range row.Panels {
-						slicearoo = append(slicearoo, &p)
+						shadow := p
+						slicearoo = append(slicearoo, &shadow)
 					}
 					err := g.ConvertPanels(slicearoo, circonusDatasource, graphiteDatasources)
 					if err != nil {
@@ -165,6 +165,30 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 			if len(graphiteDatasources) > 0 && !contains(graphiteDatasources, *panel.Datasource) {
 				logger.Printf(logger.LvlInfo, "Skipping panel due to datasource type.")
 				continue
+			}
+		}
+		if panel.OfType == sdk.RowType && len(panel.Panels) >= 1 {
+			// A row panel, can have it's own set of panel inside (who designed this?) loop through THOSE panels and process them
+			if g.Debug {
+				logger.Printf(logger.LvlDebug, "Panel %d has subpanels, converting those too.", panel.ID)
+			}
+			// loop through panels and process them
+			var slicearoo []*sdk.Panel
+			for _, i := range panel.Panels {
+				shadow := i
+				slicearoo = append(slicearoo, &shadow)
+				if g.Debug {
+					logger.Printf(logger.LvlDebug, "Panel %d has subpanel %d", panel.ID, i.ID)
+				}
+			}
+			err := g.ConvertPanels(slicearoo, circonusDatasource, graphiteDatasources)
+			if err != nil {
+				logger.Printf(logger.LvlError, "Error converting Subpanel inside panel %d : %v", panel.ID, err)
+				// skip it and keep going
+			}
+		} else {
+			if g.Debug {
+				logger.Printf(logger.LvlDebug, "Panel %d does not have subpanels.", panel.ID)
 			}
 		}
 		panel.Datasource = &circonusDatasource
