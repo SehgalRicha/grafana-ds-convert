@@ -183,7 +183,7 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 			}
 			err := g.ConvertPanels(slicearoo, circonusDatasource, graphiteDatasources)
 			if err != nil {
-				logger.Printf(logger.LvlError, "Error converting Subpanel inside panel %s : %v", panel.ID, err)
+				logger.Printf(logger.LvlError, "Error converting Subpanel inside panel %d : %v", panel.ID, err)
 				// skip it and keep going
 			}
 		} else {
