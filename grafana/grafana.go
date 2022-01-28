@@ -191,11 +191,11 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 				logger.Printf(logger.LvlDebug, "Panel %d does not have subpanels.", panel.ID)
 			}
 		}
-		panel.Datasource = &circonusDatasource
 		targets := panel.GetTargets()
 		if targets == nil {
 			continue
 		}
+		panel.Datasource = &circonusDatasource
 		if g.NoAlerts && panel.Alert != nil {
 			panel.Alert = nil
 		}
