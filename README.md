@@ -43,7 +43,7 @@ debug = false
   # aggregations, and which ones to act on
   [circonus.statsd_aggregations]
     remove = true
-    agg_list = ["mean","sum","count_ps","count"]
+    agg_list = ["mean","sum","count_ps","count","upper","upper_90","upper_95","upper_99","median"]
     # Optional rate period override (in seconds) for histogram:rate() to set period=Ns  
     # rate_period = 10
 
