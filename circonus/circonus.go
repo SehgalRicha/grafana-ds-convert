@@ -136,9 +136,6 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.HandleStatsdAggregations)
 	}
 
-	// add #min_period=X directive for better visualizations
-	translateResp.CAQL = fmt.Sprintf("#min_period=%s %s", strconv.Itoa(c.StatsdFlushInterval), translateResp.CAQL)
-
 	return translateResp.CAQL, nil
 }
 
