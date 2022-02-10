@@ -136,9 +136,6 @@ func (c *Client) Translate(graphiteQuery string) (string, error) {
 		translateResp.CAQL = r.ReplaceAllStringFunc(translateResp.CAQL, c.HandleStatsdAggregations)
 	}
 
-	// add #min_period=X directive for better visualizations
-	translateResp.CAQL = fmt.Sprintf("#min_period=%s %s", strconv.Itoa(c.StatsdFlushInterval), translateResp.CAQL)
-
 	return translateResp.CAQL, nil
 }
 
@@ -337,8 +334,16 @@ func getAppendCAQL(statsdAgg string, rate_period int) string {
 		return "histogram:mean()"
 	case "lower":
 		return "histogram:min()"
-	case "upper":
-		return "histogram:max()"
+       case "median":
+               return "histogram:percentile(50)"
+       case "upper":
+               return "histogram:max()"
+       case "upper_90":
+               return "histogram:percentile(90)"
+       case "upper_95":
+               return "histogram:percentile(95)"
+       case "upper_99":
+               return "histogram:percentile(99)"
 	case "count_ps":
 		return "histogram:rate(period=1s)"
 	case "std":
