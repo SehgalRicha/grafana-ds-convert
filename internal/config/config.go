@@ -48,7 +48,7 @@ type Grafana struct {
 type StatsdAggregations struct {
 	Remove          bool     `json:"remove" toml:"remove" yaml:"remove"`
 	AggregationList []string `json:"agg_list" toml:"agg_list" yaml:"agg_list"`
-	RatePeriod      int      `json:"rate_period" toml:"rate_period" yaml:"rate_period"`
+	Period          int      `json:"period" toml:"period" yaml:"period"`
 }
 
 // Validate validates that the required config keys are set

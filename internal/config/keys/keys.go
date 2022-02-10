@@ -63,7 +63,7 @@ const (
 	CirconusStatsdFlushInterval      = "circonus.statsd_interval"
 	CirconusStatsdAggregationsRemove = "circonus.statsd_aggregations.remove"
 	CirconusStatsdAggregationsList   = "circonus.statsd_aggregations.agg_list"
-	CirconusStatsdRatePeriod         = "circonus.statsd_aggregations.rate_period"
+	CirconusStatsdPeriod             = "circonus.statsd_aggregations.period"
 
 	//
 	// Miscellaneous
