@@ -2,9 +2,11 @@ package grafana
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 
 	"github.com/bdunavant/sdk"
 	"github.com/circonus/grafana-ds-convert/circonus"
@@ -93,6 +95,42 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 	// loop through dashboards and their panels, translating "targetFull" or "target"
 	for _, board := range boards {
 		logger.Printf(logger.LvlInfo, "Converting Dashboard %d: %s", board.ID, board.Title)
+
+		if len(board.Templating.List) > 0 {
+			graphite_re := regexp.MustCompile(`(?i)graphite`)
+			for _, template := range board.Templating.List {
+				if template.Datasource != nil {
+					// Only convert graphite datasources
+					if !graphite_re.MatchString(*template.Datasource) {
+						if g.Debug {
+							logger.Printf(logger.LvlDebug, "Skipping template datasource %s since it doesn't match 'graphite'", *template.Datasource)
+						}
+						continue
+					}
+					if g.Debug {
+						logger.Printf(logger.LvlDebug, "Name: %s Type: %s Datasource %s\nQuery: %s", template.Name, template.Type, *template.Datasource, template.Query)
+					}
+					if template.Query != nil && len(*template.Query) > 0 {
+						*template.Datasource = circonusDatasource
+						// strip off the wrapping ""s
+						queryStr := *template.Query
+						queryStr = queryStr[1 : len(queryStr)-1]
+						// Marshal it back into escaped JSON so we can shove it as JSON safely into the RawMessage
+						escapedString, err := json.Marshal(string(queryStr))
+						if nil != err {
+							logger.Printf(logger.LvlError, "Cannot escape variable string: %s", *template.Query)
+							continue
+						}
+						newQueryObj := json.RawMessage(`{"metricFindQuery":` + string(escapedString) + `,"queryType":"graphite style","resultsLimit":500,"tagCategory":""}`)
+						if g.Debug {
+							logger.Printf(logger.LvlDebug, "variable query before: %s  object: %s", *template.Query, newQueryObj)
+						}
+						*template.Query = newQueryObj
+					}
+				}
+			}
+		}
+
 		if len(board.Panels) >= 1 {
 			err := g.ConvertPanels(board.Panels, circonusDatasource, graphiteDatasources)
 			if err != nil {
@@ -195,7 +233,12 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 		if targets == nil {
 			continue
 		}
-		panel.Datasource = &circonusDatasource
+		if panel.Datasource == nil {
+			strcpy := circonusDatasource
+			panel.Datasource = &strcpy
+		} else {
+			*panel.Datasource = circonusDatasource
+		}
 		if g.NoAlerts && panel.Alert != nil {
 			panel.Alert = nil
 		}
