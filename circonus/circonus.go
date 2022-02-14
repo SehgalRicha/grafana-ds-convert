@@ -259,8 +259,8 @@ func (c *Client) HandleStatsdAggregations(s string) string {
 	findtagsResponseSlice, err := c.IRONdbFindTags(string(metricSearchPattern))
 	if err != nil {
 		logger.Printf(logger.LvlError, err.Error())
-		logger.Printf(logger.LvlWarning, "Above error means we cannot validate '%s' which we will maintain as a best-effort try.", s)
-		return s
+		logger.Printf(logger.LvlWarning, "Above error means we cannot validate '%s'. Translating based on last part of name omly.", s)
+		// Keep going, this isn't fatal
 	}
 	statsdType := ""
 	if 0 == len(findtagsResponseSlice) {
@@ -338,16 +338,16 @@ func getAppendCAQL(statsdAgg string, period int) string {
 		return "histogram:mean()"
 	case "lower":
 		return "histogram:min()"
-       case "median":
-               return "histogram:percentile(50)"
-       case "upper":
-               return "histogram:max()"
-       case "upper_90":
-               return "histogram:percentile(90)"
-       case "upper_95":
-               return "histogram:percentile(95)"
-       case "upper_99":
-               return "histogram:percentile(99)"
+	case "median":
+		return "histogram:percentile(50)"
+	case "upper":
+		return "histogram:max()"
+	case "upper_90":
+		return "histogram:percentile(90)"
+	case "upper_95":
+		return "histogram:percentile(95)"
+	case "upper_99":
+		return "histogram:percentile(99)"
 	case "count_ps":
 		return "histogram:rate(period=1s)"
 	case "std":
