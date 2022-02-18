@@ -258,8 +258,13 @@ func (c *Client) HandleStatsdAggregations(s string) string {
 	// query /find/tags for the metric name pattern
 	findtagsResponseSlice, err := c.IRONdbFindTags(string(metricSearchPattern))
 	if err != nil {
-		logger.Printf(logger.LvlError, err.Error())
-		logger.Printf(logger.LvlWarning, "Above error means we cannot validate '%s'. Translating based on last part of name omly.", s)
+		matched, matcherr := regexp.Match(`: 400$`, []byte(err.Error()))
+		if matcherr != nil || !matched {
+			logger.Printf(logger.LvlError, err.Error())
+		} else {
+			logger.Printf(logger.LvlWarning, err.Error())
+		}
+		logger.Printf(logger.LvlWarning, "Above means we cannot validate '%s'. Translating based on last part of name omly.", s)
 		// Keep going, this isn't fatal
 	}
 	statsdType := ""
@@ -307,6 +312,14 @@ func (c *Client) HandleStatsdAggregations(s string) string {
 		}
 		return fmt.Sprintf("graphite:find:histogram('%s') | %s", newName, appendCAQL)
 	}
+	// if we're still here, we could still have a statsd_type that we need to replace, but the name doesn't match
+	if contains(c.StatsdAggregations, statsdType) {
+		appendCAQL := getAppendCAQL(statsdType, c.Period)
+		newName := metricName[1]
+		logger.Printf(logger.LvlInfo, "%s identified as a statsd_type %s.  Keeping raw name.", newName, statsdType)
+		return fmt.Sprintf("graphite:find:histogram('%s') | %s", newName, appendCAQL)
+	}
+
 	return s
 }
 
