@@ -149,9 +149,8 @@ func (g Grafana) ConvertDashboards(boards []sdk.Board, circonusDatasource string
 					foundOne = true
 					// board is []*Panel, vs Row is []Panel, so convert it into a slice of *'s so we can pass it in
 					var slicearoo []*sdk.Panel
-					for _, p := range row.Panels {
-						shadow := p
-						slicearoo = append(slicearoo, &shadow)
+					for i := 0; i < len(row.Panels); i++ {
+						slicearoo = append(slicearoo, &row.Panels[i])
 					}
 					err := g.ConvertPanels(slicearoo, circonusDatasource, graphiteDatasources)
 					if err != nil {
@@ -212,12 +211,8 @@ func (g Grafana) ConvertPanels(p []*sdk.Panel, circonusDatasource string, graphi
 			}
 			// loop through panels and process them
 			var slicearoo []*sdk.Panel
-			for _, i := range panel.Panels {
-				shadow := i
-				slicearoo = append(slicearoo, &shadow)
-				if g.Debug {
-					logger.Printf(logger.LvlDebug, "Panel %d has subpanel %d", panel.ID, i.ID)
-				}
+			for i := 0; i < len(panel.Panels); i++ {
+				slicearoo = append(slicearoo, &panel.Panels[i])
 			}
 			err := g.ConvertPanels(slicearoo, circonusDatasource, graphiteDatasources)
 			if err != nil {
